@@ -36,7 +36,7 @@ Critères : exécution 100 % navigateur (compatible GitHub Pages), licence compa
 | | Giac/Xcas en WebAssembly (CAS de niveau supérieur) | **GPL-3.0** | Puissant mais licence incompatible avec une distribution MIT : à n'envisager que comme extension optionnelle distribuée séparément. |
 | | Pyodide (Python, comme sur NumWorks) | MPL-2.0 | ≈ 10 Mo : chargement explicite à la demande uniquement. |
 | Suites numériques | mathjs + moteur de rendu de la grapheuse | — | Toile d'araignée et nuage de points via `Painter`. |
-| Probabilités & statistiques | **Chart.js 4** (+ jStat pour les fonctions de répartition) | MIT | Ici Chart.js est pertinent : diagrammes en barres, histogrammes, fréquences de simulation. |
+| Probabilités & statistiques | *aucune* (graphiques via Painter, fonctions spéciales maison) | — | Finalement ni Chart.js ni jStat : les graphiques passent par le Painter commun (exports PNG/SVG/PDF identiques à l'écran, style homogène), et ln Γ (Lanczos), Φ (Hart) et Φ⁻¹ (Acklam + Halley) tiennent en 150 lignes testées, précises à ~1e-14. Module : ≈ 20 ko gzip. |
 | Arithmétique & matrices | mathjs (`Fraction`, `BigNumber`) | Apache-2.0 | Calculs exacts. |
 | Optique, mécanique | Moteurs maison (lancer de rayons, Runge-Kutta 4) ; planck.js si des collisions sont nécessaires | MIT | |
 | Générateur de fiches | KaTeX (aperçu) + jsPDF ; export `.tex` / `.md` en texte brut | MIT | |

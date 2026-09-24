@@ -62,6 +62,13 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Toile d'araignée** : disponible pour une relation autonome uₙ₊₁ = g(uₙ) ; cadrage orthonormé automatique autour des termes.
 - **Seuil** : recherche du plus petit rang (jusqu'à 20 000) et traduction de la relation en Python (boucle « tant que » du programme de lycée).
 
+## Probabilités & statistiques (`src/modules/probability`)
+
+- **Lois** (`distributions.ts`) : ln Γ par Lanczos (ln k! exact en cumul pour k < 1024), Φ par l'algorithme de Hart (double précision), Φ⁻¹ par Acklam affiné d'une itération de Halley. Fonctions de répartition discrètes mises en cache par cumul ; quantile discret = plus petit k tel que P(X ≤ k) ≥ α (convention des intervalles de fluctuation).
+- **Statistiques** (`stats.ts`) : quartiles et déciles selon la définition du lycée (plus petite valeur telle qu'au moins 25 % des données lui soient inférieures ou égales), variance en 1/N, histogrammes à classes « rondes » (règle de Sturges par défaut), moindres carrés.
+- **Simulation** : générateur xoshiro128** (graine issue de `crypto.getRandomValues`) ; l'historique de la fréquence est sous-échantillonné (1 500 points au plus) pour rester fluide après des millions de tirages ; la somme de deux dés est simulée par deux lancers réels.
+- **Graphiques** (`charts.ts`) : repères, barres, aires, boîtes à moustaches dessinés via Painter ; les zones survolables sont collectées pendant le rendu pour les info-bulles.
+
 ## Export PDF
 
 `core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.

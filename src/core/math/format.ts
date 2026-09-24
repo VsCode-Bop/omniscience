@@ -28,7 +28,14 @@ export function fmt(x: number, digits = 4): string {
     const e = String(Number(exp)).replace(/./g, (c) => SUPERSCRIPTS[c] ?? c);
     return `${frenchify(trimZeros(mantissa))} × 10${e}`;
   }
-  return frenchify(trimZeros(x.toPrecision(digits)));
+  return group(frenchify(trimZeros(x.toPrecision(digits))));
+}
+
+/** Espace fine insécable entre les milliers à partir de 10 000 (usage typographique français). */
+function group(s: string): string {
+  const m = /^(−?)(\d{5,})(.*)$/.exec(s);
+  if (!m) return s;
+  return m[1] + m[2].replace(/\B(?=(\d{3})+$)/g, '\u202f') + m[3];
 }
 
 /** Coordonnées d'un point : (2,5 ; −1). Le point-virgule évite l'ambiguïté avec la virgule décimale. */

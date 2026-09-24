@@ -70,6 +70,9 @@ describe('formatage à la française', () => {
     expect(fmt(1 / 3)).toBe('0,3333');
     expect(fmt(1.5e-7)).toBe('1,5 × 10⁻⁷');
     expect(fmt(Infinity)).toBe('+∞');
+    expect(fmt(1234)).toBe('1234');
+    expect(fmt(12345.5, 7)).toBe('12\u202f345,5');
+    expect(fmt(-1234567, 8)).toBe('−1\u202f234\u202f567');
     expect(fmtPoint(1, -2)).toBe('(1 ; −2)');
   });
 
