@@ -20,6 +20,27 @@
           document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         } catch (e) {}
       })();
+      // Diagnostic de déploiement : si GitHub Pages publie le code source brut (source
+      // « Deploy from a branch »), le module /src/main.ts est introuvable : on explique quoi faire
+      // au lieu d'afficher une page blanche. Le site compilé ne charge jamais de fichier .ts.
+      window.addEventListener(
+        'error',
+        function (e) {
+          var t = e.target;
+          if (!t || t.tagName !== 'SCRIPT' || !/\.ts($|\?)/.test(t.src || '')) return;
+          var box = document.createElement('div');
+          box.setAttribute('role', 'alert');
+          box.style.cssText =
+            'max-width:40rem;margin:4rem auto;padding:1.5rem;font:16px/1.55 system-ui,sans-serif;border:1px solid #f59e0b;border-radius:12px;background:#fffbeb;color:#1f2937';
+          box.innerHTML =
+            '<h1 style="font-size:1.3rem;margin:0 0 .6rem">Le site n\'a pas été compilé</h1>' +
+            '<p>GitHub Pages publie le code source brut au lieu du site construit par le workflow.</p>' +
+            '<p><b>Correction :</b> dans le dépôt GitHub, <b>Settings → Pages → Build and deployment → Source : « GitHub Actions »</b>, ' +
+            'puis onglet <b>Actions</b> → « CI &amp; déploiement GitHub Pages » → <b>Run workflow</b>.</p>';
+          (document.getElementById('app') || document.body).appendChild(box);
+        },
+        true,
+      );
     </script>
   </head>
   <body>

@@ -1,5 +1,7 @@
-# Vérifie chaque contribution (types + tests + build) et publie sur GitHub Pages
-# à chaque push sur main. Activer une seule fois : Settings → Pages → Source : « GitHub Actions ».
+# Vérifie chaque contribution (types + tests + build) et publie sur GitHub Pages à chaque
+# push sur la branche par défaut du dépôt (quel que soit son nom : main, master…).
+# Réglage unique : Settings → Pages → Build and deployment → Source : « GitHub Actions ».
+# (Avec « Deploy from a branch », GitHub publierait le code source brut : page blanche.)
 name: CI & déploiement GitHub Pages
 
 on:
@@ -33,12 +35,12 @@ jobs:
           # Site de projet servi sous https://<compte>.github.io/<dépôt>/ ; mettre « / » avec un domaine personnalisé.
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v4
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
         with:
           path: dist
 
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
     permissions:

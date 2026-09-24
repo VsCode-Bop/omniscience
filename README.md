@@ -31,7 +31,11 @@ npm run preview    # sert dist/ localement
 ## Déployer sur GitHub Pages
 
 1. Dans le dépôt : **Settings → Pages → Build and deployment → Source : « GitHub Actions »**.
-2. Pousser sur `main` : le workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) lance les tests, construit le site avec `BASE_PATH=/<nom-du-dépôt>/` et le publie.
+   ⚠️ Ne pas choisir « Deploy from a branch » : GitHub publierait le code source non compilé
+   (page blanche ; l'application affiche alors un message expliquant la correction).
+2. Pousser sur la branche par défaut du dépôt (ou onglet **Actions** → « CI & déploiement GitHub Pages » → **Run workflow**) :
+   le workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) lance les tests, construit le site avec
+   `BASE_PATH=/<nom-du-dépôt>/` et le publie.
 
 Avec un domaine personnalisé, construire avec `BASE_PATH=/`. Le routage par fragment (`#/circuits`) évite toute configuration de réécriture d'URL, que GitHub Pages ne permet pas.
 
