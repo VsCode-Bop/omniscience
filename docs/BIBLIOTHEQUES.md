@@ -31,8 +31,8 @@ Critères : exécution 100 % navigateur (compatible GitHub Pages), licence compa
 
 | Module | Bibliothèques | Licence | Remarques |
 |---|---|---|---|
-| Calculatrice augmentée | **mathjs** (numérique, fractions, matrices) + **Algebrite** (factoriser, développer, intégrer) | Apache-2.0 / MIT | nerdamer (MIT) en alternative. |
-| | **MathLive** (éditeur d'équations, clavier virtuel pour tablette/TBI) | MIT | Préféré à MathQuill (MPL-2.0), peu maintenu. |
+| Calculatrice augmentée | **mathjs** complet (nombres, `Fraction`, `BigNumber` 64 chiffres, matrices, unités, `simplify`, `derivative`, `rationalize`) + KaTeX | Apache-2.0 / MIT | **Retenu** sans Algebrite : factorisation, résolution et identification des valeurs exactes sont écrites en ~500 lignes testées (polynômes à coefficients rationnels BigInt), ce qui évite 300 ko de plus et garde des résultats rédigés à la française. Clavier virtuel maison. |
+| | **MathLive** (éditeur d'équations, clavier virtuel pour tablette/TBI) | MIT | Envisagé pour une saisie en 2D ; préféré à MathQuill (MPL-2.0), peu maintenu. |
 | | Giac/Xcas en WebAssembly (CAS de niveau supérieur) | **GPL-3.0** | Puissant mais licence incompatible avec une distribution MIT : à n'envisager que comme extension optionnelle distribuée séparément. |
 | | Pyodide (Python, comme sur NumWorks) | MPL-2.0 | ≈ 10 Mo : chargement explicite à la demande uniquement. |
 | Suites numériques | mathjs + moteur de rendu de la grapheuse | — | Toile d'araignée et nuage de points via `Painter`. |

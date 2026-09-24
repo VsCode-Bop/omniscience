@@ -85,6 +85,13 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Lentilles** : approximation de Gauss ; un rayon est une droite y = y₀ + s·(x − x₀) dont la pente devient s − y/f′ à la traversée d'une lentille mince. Le même traceur sert aux rayons particuliers, aux faisceaux et aux associations de lentilles ; les prolongements en pointillés sont tracés vers les images virtuelles et les objets virtuels. Relation de conjugaison et grandissement calculés lentille par lentille.
 - **Réfraction** : loi de Snell-Descartes sous forme vectorielle (réflexion totale détectée), intensité du rayon réfléchi dosée par les coefficients de Fresnel ; le prisme applique deux réfractions successives, l'indice suivant la loi de Cauchy n(λ) = A + B/λ². Tests : relations A = r + r′, D = i + i′ − A, minimum de déviation, grossissement −f′₁/f′₂ d'une lunette afocale.
 
+## Calculatrice augmentée (`src/modules/calculator`)
+
+- **Trois instances de mathjs** (`engine.ts`) : nombres flottants (valeur approchée, unités, matrices numériques), `Fraction` à BigInt (calculs rationnels exacts, matrices en fractions) et `BigNumber` à 64 chiffres (vérification des formes exactes). La saisie est d'abord ramenée à la syntaxe mathjs : virgule décimale hors crochets, `;` comme séparateur d'arguments, `5 → a`, alias français (`ln`, `log` décimal, `pgcd`, `ppcm`, `binome`, `reste`…).
+- **Verrouillage** : après avoir capturé les fonctions dont le moteur a besoin, `import`, `createUnit`, `reviver`, `evaluate` et `parse` sont remplacés dans chaque instance par des fonctions qui lèvent une erreur ; une expression saisie ne peut donc ni redéfinir la bibliothèque ni évaluer du texte arbitraire.
+- **Valeurs exactes** (`exact.ts`) : un résultat flottant est confronté à des formes candidates — rationnel p/q, k√m/q, kπ/q, (a + b√m)/d — obtenues par fractions continues ; une forme n'est retenue que si l'expression, réévaluée à 64 chiffres, lui est égale à 10⁻⁴⁰ près. Sinon seule la valeur approchée est affichée.
+- **Calcul formel** : `developper`, `simplifier`, `deriver` s'appuient sur `simplify`, `rationalize` et `derivative` de mathjs ; `factoriser` et `resoudre` convertissent l'expression en polynôme à coefficients rationnels (racines rationnelles par le test des diviseurs, puis formule du second degré avec radicaux simplifiés, puis Durand-Kerner pour les degrés supérieurs) ; les entiers sont factorisés avec le module d'arithmétique. Le rendu LaTeX (`texOf`) applique les conventions françaises (virgule, `\ln`, matrices entre parenthèses).
+
 ## Export PDF
 
 `core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Le PDF est toujours produit avec la palette claire (impression) : la coquille bascule le thème de façon synchrone, appelle `readTheme()` du module, génère le SVG et rétablit le thème avant tout rafraîchissement de l'écran. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.
@@ -97,6 +104,7 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 | Simulateur de circuits | ≈ 22 ko |
 | Grapheuse (dont mathjs restreint) | ≈ 116 ko |
 | Étude KaTeX (à la demande) | ≈ 79 ko + 8 ko CSS |
+| Calculatrice (mathjs complet + moteur exact) | ≈ 98 ko + KaTeX |
 | Export PDF (jsPDF + svg2pdf, à la demande) | ≈ 155 ko |
 
 ## Tests
