@@ -27,7 +27,7 @@ Critères : exécution 100 % navigateur (compatible GitHub Pages), licence compa
 | | **Chart.js**, Plotly | Conçus pour des données, pas pour des fonctions continues sur un repère infini (zoom, discontinuités). Plotly est en outre très lourd (≈ 1 Mo). |
 | | Moteur Canvas maison | **Retenu** : échantillonnage adaptatif, détection des discontinuités, rendu Canvas/SVG unifié, contrôle total des conventions françaises. |
 
-## Retenues pour les modules planifiés
+## Retenues pour les autres modules
 
 | Module | Bibliothèques | Licence | Remarques |
 |---|---|---|---|
@@ -39,5 +39,5 @@ Critères : exécution 100 % navigateur (compatible GitHub Pages), licence compa
 | Probabilités & statistiques | *aucune* (graphiques via Painter, fonctions spéciales maison) | — | Finalement ni Chart.js ni jStat : les graphiques passent par le Painter commun (exports PNG/SVG/PDF identiques à l'écran, style homogène), et ln Γ (Lanczos), Φ (Hart) et Φ⁻¹ (Acklam + Halley) tiennent en 150 lignes testées, précises à ~1e-14. Module : ≈ 20 ko gzip. |
 | Arithmétique & matrices | mathjs (`Fraction`, `BigNumber`) | Apache-2.0 | Calculs exacts. |
 | Optique, mécanique | Moteurs maison (lancer de rayons, Runge-Kutta 4) ; planck.js si des collisions sont nécessaires | MIT | |
-| Générateur de fiches | KaTeX (aperçu) + jsPDF ; export `.tex` / `.md` en texte brut | MIT | |
+| Générateur de fiches | KaTeX (aperçu et impression) ; export `.tex` / `.md` en texte brut | MIT | **Retenu** : le PDF passe par l'impression du navigateur (feuille de style dédiée, pages A4) plutôt que par jsPDF : les formules KaTeX restent vectorielles et nettes, sans police à embarquer. Figures produites à la fois en SVG et en TikZ. |
 | Tests de bout en bout | Playwright | Apache-2.0 | Chromium en CI. |

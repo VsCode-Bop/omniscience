@@ -45,7 +45,7 @@ export function renderHome(container: HTMLElement): () => void {
           h('div', { class: 'eyebrow' }, h('span', { class: 'eyebrow-dot' }), 'Logiciel libre · sans compte · hors-ligne'),
           h('h1', { class: 'serif' }, 'Le laboratoire numérique de vos cours de sciences.'),
           h('p', { class: 'lead' },
-            'Des outils précis et élégants pour expliquer, projeter et faire manipuler : simulateur de circuits, grapheuse, et bientôt calcul formel, probabilités, optique. Tout s\'exécute dans le navigateur.',
+            'Des outils précis et élégants pour expliquer, projeter et faire manipuler : circuits, grapheuse, calcul formel, probabilités, optique, mécanique, et des fiches d\'exercices corrigées en un clic. Tout s\'exécute dans le navigateur.',
           ),
           h('div', { class: 'hero-actions' },
             h('a', { class: 'btn btn-primary btn-lg', href: '#/circuits' }, 'Ouvrir le simulateur', svgIcon(icon('arrowRight'))),
@@ -53,7 +53,9 @@ export function renderHome(container: HTMLElement): () => void {
           ),
           h('dl', { class: 'hero-stats' },
             h('div', null, h('dt', null, String(available)), h('dd', null, 'outils disponibles')),
-            h('div', null, h('dt', null, String(MODULES.length - available)), h('dd', null, 'en préparation')),
+            MODULES.length > available
+              ? h('div', null, h('dt', null, String(MODULES.length - available)), h('dd', null, 'en préparation'))
+              : h('div', null, h('dt', null, '5e → Tle'), h('dd', null, 'du collège au lycée')),
             h('div', null, h('dt', null, '0'), h('dd', null, 'compte, serveur ou publicité')),
           ),
         ),

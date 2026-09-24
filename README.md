@@ -18,7 +18,7 @@ L'application est hébergée sur GitHub Pages, s'installe comme une application 
 | **Mécanique : projectiles** | ✅ prototype | Lancer dans un champ de pesanteur uniforme (Terre, Lune, Mars, Jupiter), frottements linéaires ou quadratiques (Runge-Kutta 4) ; **chronophotographie**, vecteurs vitesse et accélération animés, composantes, **construction de Δv⃗** ; graphes x(t), y(t), vitesses et **énergies** synchronisés ; vecteur v⃗₀ réglable à la souris ; cible à atteindre ; équations horaires chiffrées ; 9 situations. |
 | **Optique géométrique** | ✅ prototype | Banc d'optique à **une ou deux lentilles minces** (objet à distance finie ou à l'infini) : rayons particuliers, faisceaux, **constructions avec prolongements virtuels**, relation de conjugaison et grandissement, objet/lentille/foyer déplaçables, lunette afocale ; **dioptre plan sur rapporteur** (Snell-Descartes, angle limite, réflexion totale, intensité réfléchie de Fresnel) avec **relevé de mesures** et droite sin i₂ = f(sin i₁) ; **dispersion par un prisme** (loi de Cauchy, minimum de déviation). |
 | **Calculatrice augmentée** | ✅ prototype | Historique façon NumWorks rendu en KaTeX ; **résultats exacts** (fractions, radicaux, multiples de π, identifiés puis vérifiés à 64 chiffres) avec valeur approchée ; calcul formel : **développer, factoriser, simplifier, dériver, résoudre** (racines exactes, complexes signalées), primitives de polynômes, intégrales ; matrices en fractions exactes, unités SI, variables (`5 → a`), notation française (virgule décimale, ln/log, pgcd, ppcm, binome…) ; aperçu en direct, clavier virtuel, catalogue commenté, copie LaTeX. |
-| Générateur de fiches | 🗺️ planifié | Fiche descriptive dans l'application, bibliothèques déjà choisies (voir [docs/BIBLIOTHEQUES.md](docs/BIBLIOTHEQUES.md)). |
+| **Générateur de fiches** | ✅ prototype | **30 modèles d'exercices à valeurs aléatoires** (fractions, calcul littéral, équations, Pythagore et trigonométrie avec figures, vecteurs, second degré, dérivées, suites, loi binomiale, exponentielle et logarithme ; conversions, loi d'Ohm, énergie, masse volumique, solutions, quantité de matière, équations de réaction), trois niveaux de difficulté ; **corrigés rédigés étape par étape et vérifiés automatiquement** ; **versions A/B/C/D** ; graine reproductible ; aperçu A4, **impression et PDF**, **export LaTeX** (figures TikZ) et **Markdown** ; barème, cartouche, exercices rédigés librement, 12 fiches modèles. |
 
 Fonctions transverses : thème clair/sombre/automatique, **mode présentation** (touche <kbd>P</kbd> : plein écran épuré, traits agrandis pour le TBI), **exports PNG / SVG / PDF vectoriel** (polices Unicode intégrées : −, Ω, ℓ, indices…), **liens d'état** (toute la configuration est compressée dans l'URL) avec **QR code** à projeter, responsive (téléphone, tablette, TBI), hors-ligne.
 
@@ -80,6 +80,13 @@ omniscience/
 │   │   │   ├── sampling.ts        échantillonnage adaptatif, discontinuités
 │   │   │   ├── analysis.ts        racines, extremums, limites, asymptotes
 │   │   │   └── renderer.ts · panel.ts · study.ts · state.ts · ticks.ts · viewport.ts · index.ts
+│   │   ├── worksheet/             générateur de fiches
+│   │   │   ├── gen-college.ts · gen-lycee.ts · gen-physique.ts   modèles d'exercices (énoncés + corrigés)
+│   │   │   ├── rng.ts             tirages reproductibles (graine, versions)
+│   │   │   ├── tex.ts · chem.ts   écriture des nombres, fractions, polynômes ; formules chimiques
+│   │   │   ├── figures.ts         figures en SVG et en TikZ
+│   │   │   ├── export.ts          documents LaTeX et Markdown
+│   │   │   └── sheet.ts · library.ts · rich.ts · view.ts · index.ts
 │   │   ├── calculator/            calculatrice augmentée
 │   │   │   ├── engine.ts          préparation de la saisie, mathjs verrouillé, commandes de calcul formel, rendu LaTeX
 │   │   │   ├── exact.ts           rationnels BigInt, identification des valeurs exactes, polynômes
@@ -110,7 +117,7 @@ omniscience/
 - **Circuits** : transistors (bipolaire, MOSFET), portes logiques, AOP, inverseur (interrupteur 3 bornes), potentiomètre, ohmmètre, diagramme de Bode, sélection multiple et copier-coller.
 - **Grapheuse** : tableau de valeurs et de variations, équations implicites et inéquations, points déplaçables, régression sur données importées.
 - **Calculatrice** : éditeur d'équations MathLive, primitives au-delà des polynômes, mode Python (Pyodide à la demande).
-- **Nouveau module** : générateur de fiches LaTeX/Markdown.
+- **Fiches** : figures issues de la grapheuse et du simulateur, nouveaux modèles (géométrie repérée, fonctions de référence, électricité en alternatif), banque d'exercices partagée.
 - **Transverse** : tests de bout en bout Playwright en CI, audit d'accessibilité, traduction anglaise.
 
 ## Contribuer

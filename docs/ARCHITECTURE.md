@@ -92,6 +92,13 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Valeurs exactes** (`exact.ts`) : un résultat flottant est confronté à des formes candidates — rationnel p/q, k√m/q, kπ/q, (a + b√m)/d — obtenues par fractions continues ; une forme n'est retenue que si l'expression, réévaluée à 64 chiffres, lui est égale à 10⁻⁴⁰ près. Sinon seule la valeur approchée est affichée.
 - **Calcul formel** : `developper`, `simplifier`, `deriver` s'appuient sur `simplify`, `rationalize` et `derivative` de mathjs ; `factoriser` et `resoudre` convertissent l'expression en polynôme à coefficients rationnels (racines rationnelles par le test des diviseurs, puis formule du second degré avec radicaux simplifiés, puis Durand-Kerner pour les degrés supérieurs) ; les entiers sont factorisés avec le module d'arithmétique. Le rendu LaTeX (`texOf`) applique les conventions françaises (virgule, `\ln`, matrices entre parenthèses).
 
+## Générateur de fiches (`src/modules/worksheet`)
+
+- **Modèles d'exercices** (`gen-*.ts`) : chaque modèle est une fonction pure `(rng, n, difficulté) → exercice` qui renvoie la consigne, un tableau ou une figure facultatifs et des questions avec leur corrigé rédigé, en « texte riche » (texte ordinaire et formules LaTeX entre `$…$`). Les valeurs sont choisies pour que les résultats soient exacts (fractions `Frac`, décimaux `m × 10ᵉ` sans erreur binaire) ; en physique-chimie, les résultats respectent les chiffres significatifs des données.
+- **Reproductibilité** (`rng.ts`, `sheet.ts`) : générateur sfc32 initialisé par hachage de « graine | version | modèle | sel de l'exercice | difficulté ». Le lien de partage contient la graine : il redonne exactement la même fiche ; « Nouvelles valeurs » sur un exercice ne change que son sel.
+- **Vérification** : les tests tirent chaque modèle à tous les niveaux avec de nombreuses graines et contrôlent que chaque formule est acceptée par KaTeX en mode strict, que le texte hors formules reste compatible avec pdfLaTeX, et que les corrigés sont justes : étapes de calcul de même valeur, solutions qui vérifient l'équation, dérivées comparées au taux d'accroissement, équations de réaction équilibrées (éléments et charges).
+- **Rendu** : l'aperçu A4 (`view.ts`) est du HTML avec KaTeX, sur papier toujours blanc ; l'impression passe par une feuille de style dédiée qui n'imprime que les pages (fiches, corrigés ou les deux, toutes versions). `export.ts` produit un document LaTeX complet (préambule, `enumerate`, `multicols`, figures TikZ) et un Markdown (figures SVG intégrées). Le texte venant d'un lien est toujours échappé ; KaTeX est appelé avec `trust: false`.
+
 ## Export PDF
 
 `core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Le PDF est toujours produit avec la palette claire (impression) : la coquille bascule le thème de façon synchrone, appelle `readTheme()` du module, génère le SVG et rétablit le thème avant tout rafraîchissement de l'écran. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.
@@ -105,6 +112,7 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 | Grapheuse (dont mathjs restreint) | ≈ 116 ko |
 | Étude KaTeX (à la demande) | ≈ 79 ko + 8 ko CSS |
 | Calculatrice (mathjs complet + moteur exact) | ≈ 98 ko + KaTeX |
+| Générateur de fiches (30 modèles) | ≈ 41 ko + KaTeX |
 | Export PDF (jsPDF + svg2pdf, à la demande) | ≈ 155 ko |
 
 ## Tests
@@ -112,6 +120,9 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 `npm test` exécute les tests Vitest (`tests/`) :
 - moteur de circuits : loi d'Ohm, loi des nœuds, pont diviseur, résistance interne, court-circuit, charge RC (63 % à τ), établissement du courant RL, période LC = 2π√(LC), diode passante/bloquée, DEL qui grille ;
 - grapheuse : compilation, produits implicites, conventions ln/log, fonctions composées, dérivées, erreurs, limites, asymptotes, échantillonnage ;
+- suites, probabilités, arithmétique, mécanique, optique : formules de référence et cas limites ;
+- calculatrice : saisie à la française, valeurs exactes, calcul formel, verrouillage de mathjs ;
+- générateur de fiches : chaque modèle tiré à tous les niveaux avec de nombreuses graines (formules KaTeX valides, corrigés vérifiés numériquement), exports LaTeX équilibrés, états partagés validés ;
 - noyau : analyse numérique, LU, formatage français, liens d'état.
 
 ## Sécurité

@@ -123,9 +123,11 @@ html.is-presenting [data-pres='hide'] { display: none !important; }
   .app, .app.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
   .sidebar {
     position: fixed; inset: 0 auto 0 0; z-index: 80; width: min(300px, 86vw);
-    transform: translateX(-100%); transition: transform .25s var(--ease); box-shadow: var(--shadow-lg);
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform .25s var(--ease), visibility 0s linear .25s;
   }
-  .app.drawer-open .sidebar { transform: none; }
+  /* Ombre et visibilité seulement tiroir ouvert : fermé, l'ombre débordait sur le contenu. */
+  .app.drawer-open .sidebar { transform: none; visibility: visible; box-shadow: var(--shadow-lg); transition: transform .25s var(--ease); }
   .app.drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: 70; background: rgb(10 10 12 / 40%); }
   /* Dans le tiroir, la barre est toujours dépliée. */
   .sidebar-collapsed .brand-name, .sidebar-collapsed .nav-label, .sidebar-collapsed .nav-soon, .sidebar-collapsed .nav-title { display: revert; }

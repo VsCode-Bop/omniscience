@@ -188,7 +188,8 @@ export class Shell {
       });
       this.active = { def, instance };
       this.moduleActions.hidden = false;
-      this.exportBtn.disabled = !instance.exportPNG && !instance.exportSVG;
+      // Les modules sans vue graphique (calculatrice, fiches) proposent leurs propres exports.
+      this.exportBtn.hidden = !instance.exportPNG && !instance.exportSVG;
     } catch (err) {
       console.error(err);
       if (token !== this.navToken) return;
