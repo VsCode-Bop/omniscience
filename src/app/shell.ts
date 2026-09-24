@@ -261,10 +261,10 @@ export class Shell {
       item('download', 'Image PNG', 'Haute résolution, pour diaporamas et ENT', !!instance.exportPNG, async () => {
         downloadBlob(await instance.exportPNG!(), timestampedName(base, 'png'));
       }),
-      item('worksheet', 'Document PDF', 'Vectoriel, prêt à imprimer', !!instance.exportSVG, async () => {
+      item('worksheet', 'Document PDF', 'Vectoriel, fond clair, prêt à imprimer', !!instance.exportSVG, async () => {
         toast('Génération du PDF…');
         const { svgToPdf } = await import('../core/export/pdf');
-        downloadBlob(await svgToPdf(instance.exportSVG!(), title), timestampedName(base, 'pdf'));
+        downloadBlob(await svgToPdf(printableSVG(instance), title), timestampedName(base, 'pdf'));
       }),
       item('graph', 'Dessin SVG', 'Vectoriel, modifiable (Inkscape, LibreOffice)', !!instance.exportSVG, () => {
         downloadText(instance.exportSVG!(), timestampedName(base, 'svg'), 'image/svg+xml');
@@ -280,3 +280,19 @@ export class Shell {
   }
 }
 
+/**
+ * SVG de la vue en palette claire, pour l'impression. Le changement de thème est
+ * synchrone et annulé avant tout rafraîchissement de l'écran : aucun clignotement.
+ */
+function printableSVG(instance: ModuleInstance): string {
+  const root = document.documentElement;
+  if (root.dataset.theme !== 'dark' || !instance.readTheme) return instance.exportSVG!();
+  root.dataset.theme = 'light';
+  try {
+    instance.readTheme();
+    return instance.exportSVG!();
+  } finally {
+    root.dataset.theme = 'dark';
+    instance.readTheme();
+  }
+}

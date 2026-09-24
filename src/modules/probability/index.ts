@@ -75,14 +75,14 @@ class ProbabilityApp implements ModuleInstance, TabHost {
   constructor(container: HTMLElement, private readonly ctx: ModuleContext) {
     this.state = sanitize(ctx.initialState);
 
-    const tabBar = h('div', { class: 'proba-tabs', role: 'tablist' }, ...TABS.map(([id, label, ic]) => {
-      const b = h('button', { class: 'proba-tab', role: 'tab', onclick: () => this.setTab(id) }, svgIcon(icon(ic), 'icon icon-sm'), label);
+    const tabBar = h('div', { class: 'panel-tabs', role: 'tablist' }, ...TABS.map(([id, label, ic]) => {
+      const b = h('button', { class: 'panel-tab', role: 'tab', onclick: () => this.setTab(id) }, svgIcon(icon(ic), 'icon icon-sm'), label);
       this.tabButtons.set(id, b);
       return b;
     }));
     this.panelBody = h('div', { class: 'panel-scroll' });
     const panel = h('aside', { class: 'panel proba-panel', 'aria-label': 'Paramètres' },
-      h('div', { class: 'panel-header proba-header' }, tabBar),
+      h('div', { class: 'panel-header panel-tabs-header' }, tabBar),
       this.panelBody,
     );
     this.canvas = h('canvas', { class: 'main-canvas', 'aria-label': 'Graphiques' });
@@ -181,6 +181,10 @@ class ProbabilityApp implements ModuleInstance, TabHost {
       law: (this.tabs.get('lois')?.getState() as LawState) ?? this.state.law,
       stats: (this.tabs.get('stats')?.getState() as StatsState) ?? this.state.stats,
     };
+  }
+
+  readTheme(): void {
+    this.pal = chartPalette();
   }
 
   refresh(): void {

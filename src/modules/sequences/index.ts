@@ -303,6 +303,10 @@ class SequencesApp implements ModuleInstance, CardHost {
     return this.state;
   }
 
+  readTheme(): void {
+    this.palette = readPalette();
+  }
+
   refresh(): void {
     this.palette = readPalette();
     const presenting = isPresenting();

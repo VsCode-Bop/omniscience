@@ -26,6 +26,8 @@ export interface ModuleInstance {
   exportSVG?(): string;
   /** Appelé quand le thème clair/sombre ou le mode présentation change. */
   refresh?(): void;
+  /** Relit seulement les couleurs du thème (export PDF en palette claire, sans effet sur la vue). */
+  readTheme?(): void;
   destroy(): void;
 }
 

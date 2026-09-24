@@ -69,9 +69,15 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Simulation** : générateur xoshiro128** (graine issue de `crypto.getRandomValues`) ; l'historique de la fréquence est sous-échantillonné (1 500 points au plus) pour rester fluide après des millions de tirages ; la somme de deux dés est simulée par deux lancers réels.
 - **Graphiques** (`charts.ts`) : repères, barres, aires, boîtes à moustaches dessinés via Painter ; les zones survolables sont collectées pendant le rendu pour les info-bulles.
 
+## Arithmétique & matrices (`src/modules/arithmetic`)
+
+- **Entiers** (`numbers.ts`) : tout en BigInt. Primalité par Miller-Rabin avec les 12 premières bases premières (déterministe jusqu'à 3,3 × 10²⁴), factorisation par divisions successives jusqu'à 1 000 puis rho de Pollard ; Euclide et Euclide étendu conservent leurs étapes pour l'affichage.
+- **Matrices** (`matrix.ts`) : coefficients rationnels exacts (`Fraction`, numérateur et dénominateur BigInt réduits) ; Gauss-Jordan enregistre chaque opération sur les lignes (« L₂ ← L₂ − 3L₁ », les éliminations d'un même pivot regroupées) ; le pivot privilégie un coefficient ±1 pour limiter les fractions.
+- **Rendu** (`typeset.ts`) : fractions empilées, puissances et matrices entre parenthèses dessinées via Painter avec des largeurs estimées sur une police à chasse fixe ; le compte rendu des calculs défile dans un canevas dont la hauteur suit le contenu, et s'exporte en entier.
+
 ## Export PDF
 
-`core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.
+`core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Le PDF est toujours produit avec la palette claire (impression) : la coquille bascule le thème de façon synchrone, appelle `readTheme()` du module, génère le SVG et rétablit le thème avant tout rafraîchissement de l'écran. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.
 
 ## Budget de performance (build de production)
 

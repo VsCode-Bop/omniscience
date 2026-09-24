@@ -197,6 +197,10 @@ class CircuitApp implements ModuleInstance {
     return this.state;
   }
 
+  readTheme(): void {
+    this.pal = readCircuitPalette();
+  }
+
   refresh(): void {
     this.pal = readCircuitPalette();
     const presenting = isPresenting();

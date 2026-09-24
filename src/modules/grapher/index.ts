@@ -234,6 +234,10 @@ class GrapherApp implements ModuleInstance, PanelHost {
     return { ...this.state, view: this.vp.bounds().map((v) => Number(v.toPrecision(8))) as GrapherState['view'] };
   }
 
+  readTheme(): void {
+    this.palette = readPalette();
+  }
+
   refresh(): void {
     this.palette = readPalette();
     const presenting = isPresenting();

@@ -14,7 +14,8 @@ L'application est hébergée sur GitHub Pages, s'installe comme une application 
 | **Grapheuse** | ✅ prototype | Canvas 2D haute densité ; fonctions cartésiennes, polaires, paramétriques, points ; curseurs animables créés automatiquement ; dérivée formelle, tangente déplaçable, intégrale, racines, extremums, intersections ; étude (limites en ±∞ et aux bornes, asymptotes verticales/horizontales/obliques) ; graduations en π ; 10 exemples. |
 | **Suites numériques** | ✅ prototype | Suites explicites, récurrentes d'ordre 1 ou 2, définies par cas, jusqu'à trois suites liées (vₙ = uₙ − 6) ; nuage de points et **toile d'araignée** construits terme à terme ; observations (arithmétique, géométrique, arithmético-géométrique, sens de variation, limite conjecturée, points fixes attractifs/répulsifs) ; paramètres animables ; tableau de valeurs et sommes ; **algorithme de seuil et programme Python** ; 10 exemples. |
 | **Probabilités & statistiques** | ✅ prototype | Simulation (pièce, dé, deux dés, urne) jusqu'à des millions de tirages : fréquences observées/théoriques, **loi des grands nombres** (entonnoir p ± 1/√n), **fluctuation d'échantillonnage** ; lois binomiale, géométrique, Poisson, hypergéométrique, uniformes, normale, exponentielle : P(X = k), P(a ≤ X ≤ b), seuils, intervalles, fonction de répartition, approximation normale ; statistiques à une variable (quartiles au sens du lycée, boîte à moustaches, histogramme, effectifs cumulés) et à deux variables (moindres carrés, corrélation, estimation). |
-| Calculatrice augmentée, arithmétique & matrices, optique, mécanique, générateur de fiches | 🗺️ planifiés | Fiches descriptives dans l'application, bibliothèques déjà choisies (voir [docs/BIBLIOTHEQUES.md](docs/BIBLIOTHEQUES.md)). |
+| **Arithmétique & matrices** | ✅ prototype | Décomposition en facteurs premiers (divisions successives et arbre, entiers jusqu'à 40 chiffres : Miller-Rabin, rho de Pollard), diviseurs ; **algorithme d'Euclide** pas à pas avec pavage du rectangle par des carrés, PPCM, Bézout ; **crible d'Ératosthène animé** ; matrices en **fractions exactes** : opérations, puissances, déterminant, inverse, rang, systèmes, **étapes du pivot de Gauss**, transformation du plan (2 × 2), copie LaTeX. |
+| Calculatrice augmentée, optique, mécanique, générateur de fiches | 🗺️ planifiés | Fiches descriptives dans l'application, bibliothèques déjà choisies (voir [docs/BIBLIOTHEQUES.md](docs/BIBLIOTHEQUES.md)). |
 
 Fonctions transverses : thème clair/sombre/automatique, **mode présentation** (touche <kbd>P</kbd> : plein écran épuré, traits agrandis pour le TBI), **exports PNG / SVG / PDF vectoriel** (polices Unicode intégrées : −, Ω, ℓ, indices…), **liens d'état** (toute la configuration est compressée dans l'URL) avec **QR code** à projeter, responsive (téléphone, tablette, TBI), hors-ligne.
 
@@ -76,6 +77,10 @@ omniscience/
 │   │   │   ├── sampling.ts        échantillonnage adaptatif, discontinuités
 │   │   │   ├── analysis.ts        racines, extremums, limites, asymptotes
 │   │   │   └── renderer.ts · panel.ts · study.ts · state.ts · ticks.ts · viewport.ts · index.ts
+│   │   ├── arithmetic/            arithmétique & matrices
+│   │   │   ├── numbers.ts         BigInt : Euclide, Bézout, Miller-Rabin, Pollard, crible
+│   │   │   ├── matrix.ts          fractions exactes, Gauss-Jordan avec étapes, systèmes
+│   │   │   └── typeset.ts · arith-tab.ts · matrix-tab.ts · index.ts
 │   │   ├── probability/           probabilités & statistiques
 │   │   │   ├── distributions.ts   lois, Φ, Φ⁻¹, ln Γ, calculs de probabilités
 │   │   │   ├── stats.ts           indicateurs, histogrammes, régression, générateur aléatoire
@@ -91,7 +96,7 @@ omniscience/
 
 - **Circuits** : transistors (bipolaire, MOSFET), portes logiques, AOP, inverseur (interrupteur 3 bornes), potentiomètre, ohmmètre, diagramme de Bode, sélection multiple et copier-coller.
 - **Grapheuse** : tableau de valeurs et de variations, équations implicites et inéquations, points déplaçables, régression sur données importées.
-- **Nouveaux modules** : calculatrice CAS (mathjs + Algebrite, éditeur MathLive), arithmétique et matrices exactes, optique (tracé de rayons), mécanique (projectiles), générateur de fiches LaTeX/Markdown.
+- **Nouveaux modules** : calculatrice CAS (mathjs + Algebrite, éditeur MathLive), optique (tracé de rayons), mécanique (projectiles), générateur de fiches LaTeX/Markdown.
 - **Transverse** : tests de bout en bout Playwright en CI, audit d'accessibilité, traduction anglaise.
 
 ## Contribuer

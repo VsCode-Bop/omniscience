@@ -1,0 +1,53 @@
+.workspace.arith { --panel-w: 380px; }
+
+/* ── Scène défilante ── */
+.arith-stage { display: flex; }
+.arith-scroll { position: absolute; inset: 0; overflow: auto; overscroll-behavior: contain; }
+.arith-canvas { display: block; }
+.arith-viewbar[hidden] { display: none; }
+
+/* ── Arithmétique ── */
+.big-input { height: 42px; font-family: var(--font-mono); font-size: 17px; letter-spacing: .01em; }
+.pair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pair-grid .field + .field { margin-top: 0; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.presets .chip { cursor: pointer; }
+.result-mono { font-family: var(--font-mono); font-size: 18px; overflow-wrap: anywhere; }
+.result-mono sup { font-size: .62em; }
+.div-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; max-height: 260px; overflow-y: auto; }
+.div-list span {
+  display: inline-block; padding: 3px 8px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--line);
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--text-2);
+}
+.div-list span.muted { background: none; border: 0; font-family: var(--font-sans); }
+.bezout { margin-top: 10px; padding: 9px 11px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+.sieve-actions { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; margin-top: 14px; }
+.hint { margin-top: 12px; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.hint i { font-family: var(--font-serif); }
+
+/* ── Matrices ── */
+.mat-editors { display: grid; gap: 14px; }
+.mat-editor { padding: 10px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface-2); }
+.mat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mat-name { font-family: var(--font-serif); font-size: 20px; min-width: 18px; }
+.mat-size { display: flex; align-items: center; gap: 4px; margin-right: auto; }
+.mat-size .select { width: 50px; }
+.mat-grid { display: grid; gap: 4px; }
+.mat-cell {
+  width: 100%; min-width: 0; height: 32px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: 7px;
+  background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 13px; text-align: center;
+}
+.mat-cell:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.mat-cell.is-invalid { border-color: var(--danger); background: var(--danger-soft); }
+.op-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.op-btn {
+  height: 34px; padding: 0 4px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--text-2); font-family: var(--font-serif); font-size: 14px; white-space: nowrap; cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.op-btn:hover { border-color: var(--line-3); background: var(--surface-2); }
+.op-btn.is-active { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); color: var(--text); }
+.param-inline { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-family: var(--font-serif); font-size: 17px; }
+.param-inline .input { width: 110px; font-family: var(--font-mono); font-size: 13px; }
+.op-grid + .param-inline + .option-row, .op-grid ~ .option-row { margin-top: 10px; }
+.tab-panel .btn-block { margin-top: 8px; }
