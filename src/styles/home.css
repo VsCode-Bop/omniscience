@@ -1,0 +1,50 @@
+.home { max-width: 1180px; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2rem) 3rem; }
+
+.hero { padding: 1rem 0 1.5rem; }
+.hero h1 { font-size: clamp(2rem, 5vw, 3.3rem); max-width: 18ch; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.25rem; }
+
+.highlights {
+  list-style: none; padding: 0; margin: 1.5rem 0 2.5rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem;
+}
+.highlights li {
+  display: flex; gap: .75rem; align-items: flex-start; padding: .9rem 1rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.highlights li > .icon { color: var(--accent); width: 22px; height: 22px; margin-top: 2px; }
+.highlights strong { display: block; }
+.highlights span { font-size: .88rem; color: var(--muted); }
+
+.home-section { margin-bottom: 2.25rem; }
+.home-section > header { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.home-section > header h2 { font-size: 1.35rem; margin: 0; }
+.home-section > header p { margin: 0; }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: .85rem; }
+.module-card {
+  display: flex; gap: .9rem; color: var(--text); text-decoration: none;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.module-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow-lg); }
+.module-card p { font-size: .9rem; color: var(--muted); margin: 0; }
+.module-card.is-planned .card-icon { background: var(--surface-2); color: var(--muted); }
+.card-title { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .3rem; }
+.card-title h3 { margin: 0; }
+.card-icon {
+  display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 12px;
+  background: var(--accent-soft); color: var(--accent);
+}
+.card-icon .icon { width: 24px; height: 24px; }
+.card-icon-large { width: 72px; height: 72px; border-radius: 18px; }
+.card-icon-large .icon { width: 38px; height: 38px; }
+
+.home-footer { text-align: center; font-size: .9rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+/* ── Fiche d'un module à venir ── */
+.planned { max-width: 1000px; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem) 1rem; }
+.planned-head { display: flex; gap: 1.25rem; align-items: flex-start; margin-bottom: 1.5rem; }
+.planned-head h1 { margin-top: .4rem; }
+.planned-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.checklist { padding-left: 1.2rem; margin: 0 0 .75rem; }
+.checklist li { margin-bottom: .35rem; }

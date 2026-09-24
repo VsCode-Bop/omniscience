@@ -1,0 +1,55 @@
+#app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.topbar {
+  display: flex; align-items: center; gap: .6rem;
+  height: var(--topbar-h); padding: 0 .75rem;
+  padding-left: max(.75rem, env(safe-area-inset-left)); padding-right: max(.75rem, env(safe-area-inset-right));
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: relative; z-index: 30;
+}
+.brand { display: flex; align-items: center; gap: .45rem; color: var(--text); text-decoration: none; font-size: 1.1rem; letter-spacing: -.01em; }
+.brand-logo { width: 26px; height: 26px; color: var(--accent); }
+.brand-name b { color: var(--accent); }
+.topbar-title { min-width: 0; flex: 0 1 auto; font-weight: 600; color: var(--muted); padding-left: .6rem; border-left: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-title:empty { display: none; }
+.topbar-spacer { flex: 1; }
+.topbar-group { display: flex; align-items: center; gap: .35rem; }
+
+.offline-badge {
+  display: none; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 600;
+  color: var(--warning); padding: .15rem .5rem; border: 1px solid currentColor; border-radius: 99px;
+}
+.is-offline .offline-badge { display: inline-flex; }
+
+.view { min-height: 0; overflow: auto; position: relative; }
+.view:focus { outline: none; }
+.module-host { height: 100%; }
+.view:not([data-module='home']):has(.module-host) { overflow: hidden; }
+
+/* ── Mode présentation ── */
+.present-exit { display: none; }
+html.is-presenting { font-size: 17px; }
+/* La barre masquée ne compte plus dans la grille : la vue occupe l'unique rangée. */
+html.is-presenting #app { grid-template-rows: minmax(0, 1fr); }
+html.is-presenting .topbar { display: none; }
+html.is-presenting .present-exit {
+  display: inline-flex; position: fixed; right: .75rem; bottom: .75rem; z-index: 60;
+  opacity: .35; transition: opacity .2s;
+}
+html.is-presenting .present-exit:hover, html.is-presenting .present-exit:focus-visible { opacity: 1; }
+html.is-presenting .btn { min-height: 42px; }
+html.is-presenting .btn-icon { width: 42px; }
+html.is-presenting [data-pres='hide'] { display: none !important; }
+
+@media (max-width: 720px) {
+  .hide-sm { display: none; }
+  .topbar { gap: .35rem; padding: 0 .5rem; }
+  .brand-name { display: none; }
+  .topbar-title { padding-left: .4rem; }
+}

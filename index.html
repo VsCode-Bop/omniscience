@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>OmniScience</title>
+    <meta
+      name="description"
+      content="OmniScience : simulateur de circuits, grapheuse et outils interactifs open source pour enseigner les mathématiques et la physique-chimie. Fonctionne hors-ligne, sans compte, sans serveur."
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <script>
+      // Applique le thème avant le premier rendu (évite le flash clair → sombre).
+      (function () {
+        try {
+          var pref = localStorage.getItem('omni:theme') || 'auto';
+          var dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#view">Aller au contenu</a>
+    <div id="app"></div>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui">
+        OmniScience est une application interactive : JavaScript doit être activé.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

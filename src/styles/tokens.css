@@ -1,0 +1,84 @@
+/* ── Jetons de conception : toute couleur passe par ces variables (thèmes clair/sombre). ── */
+:root {
+  color-scheme: light;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-math: 'JetBrains Mono', 'Cascadia Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --radius: 10px;
+  --radius-sm: 7px;
+  --topbar-h: 52px;
+  --shadow: 0 1px 2px rgb(15 23 42 / 6%), 0 4px 16px rgb(15 23 42 / 6%);
+  --shadow-lg: 0 10px 40px rgb(15 23 42 / 18%);
+
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-2: #f0f3f8;
+  --surface-3: #e6ebf3;
+  --border: #dde3ec;
+  --text: #0f172a;
+  --muted: #5b6577;
+  --accent: #2563eb;
+  --accent-soft: rgb(37 99 235 / 12%);
+  --accent-contrast: #ffffff;
+  --danger: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
+
+  /* Zones de dessin */
+  --canvas-bg: #ffffff;
+  --grid-minor: #eef1f6;
+  --grid-major: #d6dce6;
+  --axis: #334155;
+  --canvas-text: #334155;
+  --canvas-muted: #7a8699;
+
+  /* Palette des courbes (indexée : s'adapte au thème) */
+  --c1: #2563eb; --c2: #dc2626; --c3: #16a34a; --c4: #9333ea;
+  --c5: #ea580c; --c6: #0891b2; --c7: #db2777; --c8: #4d7c0f;
+
+  /* Circuits */
+  --wire: #334155;
+  --component: #1e293b;
+  --conv-arrow: #dc2626;
+  --electron: #1d4ed8;
+  --pot-low: #2563eb;
+  --pot-high: #ea580c;
+  --lamp-glow: #facc15;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+  --shadow-lg: 0 10px 40px rgb(0 0 0 / 50%);
+
+  --bg: #0a0f1c;
+  --surface: #111827;
+  --surface-2: #172033;
+  --surface-3: #1f2a40;
+  --border: #253149;
+  --text: #e6eaf2;
+  --muted: #95a1b6;
+  --accent: #60a5fa;
+  --accent-soft: rgb(96 165 250 / 16%);
+  --accent-contrast: #0a0f1c;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+
+  --canvas-bg: #0d1424;
+  --grid-minor: #152036;
+  --grid-major: #223050;
+  --axis: #cbd5e1;
+  --canvas-text: #cbd5e1;
+  --canvas-muted: #7d8aa3;
+
+  --c1: #60a5fa; --c2: #f87171; --c3: #4ade80; --c4: #c084fc;
+  --c5: #fb923c; --c6: #22d3ee; --c7: #f472b6; --c8: #a3e635;
+
+  --wire: #cbd5e1;
+  --component: #e2e8f0;
+  --conv-arrow: #f87171;
+  --electron: #7dd3fc;
+  --pot-low: #60a5fa;
+  --pot-high: #fb923c;
+  --lamp-glow: #fde047;
+}
