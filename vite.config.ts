@@ -44,7 +44,7 @@ export default defineConfig({
       workbox: {
         // Tous les modules (chunks chargés à la demande) sont pré-cachés : l'application
         // entière fonctionne hors-ligne après la première visite.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,ttf}'],
         // Dépendances optionnelles de jsPDF jamais chargées par OmniScience (export HTML, canvg).
         globIgnores: ['**/html2canvas-*.js', '**/purify.es-*.js', '**/index.es-*.js'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

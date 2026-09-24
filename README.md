@@ -12,9 +12,10 @@ L'application est hébergée sur GitHub Pages, s'installe comme une application 
 |---|---|---|
 | **Simulateur de circuits** | ✅ prototype | Moteur MNA + Newton-Raphson + intégration trapézoïdale ; piles, GBF, sources de courant, résistances, lampes, moteurs, condensateurs, bobines, diodes, DEL, interrupteurs, ampèremètres, voltmètres, masse ; **sens conventionnel (flèches rouges) et électrons (particules) animés, ensemble ou séparément** ; loi des nœuds vérifiée au survol ; multimètre intégré ; oscilloscope 2 voies ; courts-circuits détectés ; DEL et lampes qui grillent ; 9 circuits d'exemple (cycle 4 → terminale). |
 | **Grapheuse** | ✅ prototype | Canvas 2D haute densité ; fonctions cartésiennes, polaires, paramétriques, points ; curseurs animables créés automatiquement ; dérivée formelle, tangente déplaçable, intégrale, racines, extremums, intersections ; étude (limites en ±∞ et aux bornes, asymptotes verticales/horizontales/obliques) ; graduations en π ; 10 exemples. |
-| Calculatrice augmentée, suites, probabilités, arithmétique & matrices, optique, mécanique, générateur de fiches | 🗺️ planifiés | Fiches descriptives dans l'application, bibliothèques déjà choisies (voir [docs/BIBLIOTHEQUES.md](docs/BIBLIOTHEQUES.md)). |
+| **Suites numériques** | ✅ prototype | Suites explicites, récurrentes d'ordre 1 ou 2, définies par cas, jusqu'à trois suites liées (vₙ = uₙ − 6) ; nuage de points et **toile d'araignée** construits terme à terme ; observations (arithmétique, géométrique, arithmético-géométrique, sens de variation, limite conjecturée, points fixes attractifs/répulsifs) ; paramètres animables ; tableau de valeurs et sommes ; **algorithme de seuil et programme Python** ; 10 exemples. |
+| Calculatrice augmentée, probabilités, arithmétique & matrices, optique, mécanique, générateur de fiches | 🗺️ planifiés | Fiches descriptives dans l'application, bibliothèques déjà choisies (voir [docs/BIBLIOTHEQUES.md](docs/BIBLIOTHEQUES.md)). |
 
-Fonctions transverses : thème clair/sombre/automatique, **mode présentation** (touche <kbd>P</kbd> : plein écran épuré, traits agrandis pour le TBI), **exports PNG / SVG / PDF vectoriel**, **liens d'état** (toute la configuration est compressée dans l'URL) avec **QR code** à projeter, responsive (téléphone, tablette, TBI), hors-ligne.
+Fonctions transverses : thème clair/sombre/automatique, **mode présentation** (touche <kbd>P</kbd> : plein écran épuré, traits agrandis pour le TBI), **exports PNG / SVG / PDF vectoriel** (polices Unicode intégrées : −, Ω, ℓ, indices…), **liens d'état** (toute la configuration est compressée dans l'URL) avec **QR code** à projeter, responsive (téléphone, tablette, TBI), hors-ligne.
 
 ## Démarrer
 
@@ -58,7 +59,7 @@ omniscience/
 │   │   ├── theme.ts · pwa.ts · toast.ts · share-dialog.ts
 │   ├── core/                      briques partagées, sans dépendance à un module
 │   │   ├── graphics/              Painter : une scène → Canvas (écran) ou SVG (export, PDF)
-│   │   ├── math/                  LU, Brent, Simpson adaptatif, Gamma, formatage « à la française »
+│   │   ├── math/                  langage des expressions, LU, Brent, Simpson adaptatif, Gamma, formatage « à la française »
 │   │   ├── export/                téléchargements, PDF vectoriel (jsPDF + svg2pdf, chargés à la demande)
 │   │   ├── url-state.ts           liens d'état compressés (lz-string)
 │   │   └── types.ts               contrat ModuleDefinition / ModuleInstance
@@ -69,11 +70,14 @@ omniscience/
 │   │   │   ├── render/            symboles IEC, animation du courant
 │   │   │   ├── ui/                palette, oscilloscope
 │   │   │   └── examples.ts · index.ts
-│   │   └── grapher/               grapheuse
-│   │       ├── expr.ts            compilateur d'expressions (AST mathjs → fonctions JS natives)
-│   │       ├── sampling.ts        échantillonnage adaptatif, discontinuités
-│   │       ├── analysis.ts        racines, extremums, limites, asymptotes
-│   │       ├── renderer.ts · panel.ts · study.ts · state.ts · ticks.ts · viewport.ts · index.ts
+│   │   ├── grapher/               grapheuse
+│   │   │   ├── expr.ts            compilateur d'expressions (AST mathjs → fonctions JS natives)
+│   │   │   ├── sampling.ts        échantillonnage adaptatif, discontinuités
+│   │   │   ├── analysis.ts        racines, extremums, limites, asymptotes
+│   │   │   └── renderer.ts · panel.ts · study.ts · state.ts · ticks.ts · viewport.ts · index.ts
+│   │   └── sequences/             suites numériques
+│   │       ├── model.ts           notation uₙ, calcul des termes, observations, seuil, Python
+│   │       └── render.ts · panel.ts · state.ts · index.ts
 │   └── styles/                    jetons de thème (clair/sombre), mise en page
 └── tests/                         tests unitaires Vitest
 ```
@@ -82,7 +86,7 @@ omniscience/
 
 - **Circuits** : transistors (bipolaire, MOSFET), portes logiques, AOP, inverseur (interrupteur 3 bornes), potentiomètre, ohmmètre, diagramme de Bode, sélection multiple et copier-coller.
 - **Grapheuse** : tableau de valeurs et de variations, équations implicites et inéquations, points déplaçables, régression sur données importées.
-- **Nouveaux modules** : calculatrice CAS (mathjs + Algebrite, éditeur MathLive), suites (termes, sommes, toile d'araignée), probabilités (Chart.js), arithmétique et matrices exactes, optique (tracé de rayons), mécanique (projectiles), générateur de fiches LaTeX/Markdown.
+- **Nouveaux modules** : calculatrice CAS (mathjs + Algebrite, éditeur MathLive), probabilités (Chart.js), arithmétique et matrices exactes, optique (tracé de rayons), mécanique (projectiles), générateur de fiches LaTeX/Markdown.
 - **Transverse** : tests de bout en bout Playwright en CI, audit d'accessibilité, traduction anglaise.
 
 ## Contribuer

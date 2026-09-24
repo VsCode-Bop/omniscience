@@ -54,6 +54,18 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Analyse** (`analysis.ts`) : racines (Brent), extremums (section dorée puis racine de f'), intersections, limites (suites de valeurs + extrapolation d'Aitken pour les convergences en 1/x), asymptotes verticales, horizontales et obliques. Les résultats sont présentés comme des conjectures numériques.
 - **Poids** : une instance mathjs restreinte (`create({ parseDependencies, derivativeDependencies, … })`) ; KaTeX n'est chargé qu'à l'ouverture d'une étude.
 
+## Suites numériques (`src/modules/sequences`)
+
+- **Notation** (`model.ts`) : uₙ, u_n, u(n), un ou u seul désignent le terme courant ; uₙ₋₁, u_{n-1}, u(n-1) le précédent. `u(…)` est un terme si l'argument est un indice (expression en n sans autre suite, ou entier), sinon un produit : « a·u(1 − u) » se lit a·uₙ·(1 − uₙ). Le langage (fonctions, virgule décimale, produits implicites) est partagé avec la grapheuse (`core/math/lang.ts`).
+- **Calcul** : chaque définition est transpilée en fonction JavaScript `(n, S) => …` où `S.u(k)` renvoie un terme mémorisé ; les termes sont calculés par indices croissants (récursion peu profonde), les définitions circulaires entre suites sont détectées. Ordre 2 détecté automatiquement (deux termes initiaux).
+- **Observations**, présentées comme des conjectures : nature (écarts ou quotients constants, relation affine g(x) = ax + b), sens de variation éventuellement à partir d'un rang, limite (stabilisation, cycles de période ≤ 8, extrapolation d'Aitken, loi des écarts en k^(−p) pour distinguer 1/n → 0 de ln n → +∞), points fixes de g par Brent avec leur caractère attractif ou répulsif (|g′(ℓ)|).
+- **Toile d'araignée** : disponible pour une relation autonome uₙ₊₁ = g(uₙ) ; cadrage orthonormé automatique autour des termes.
+- **Seuil** : recherche du plus petit rang (jusqu'à 20 000) et traduction de la relation en Python (boucle « tant que » du programme de lycée).
+
+## Export PDF
+
+`core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.
+
 ## Budget de performance (build de production)
 
 | Ressource | Taille gzip |

@@ -110,12 +110,4 @@
 }
 .expr-add:hover { color: var(--text); background: var(--surface-2); }
 
-/* Popovers */
-.examples-menu { min-width: 300px; }
-.help-pop { width: 330px; padding: 6px 12px 12px; }
-.help-pop table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 2px 0 10px; }
-.help-pop td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text-2); }
-.help-pop code { font-family: var(--font-mono); font-size: 12px; color: var(--text); white-space: nowrap; }
-.help-pop p { font-size: 12px; color: var(--muted); }
-
 html.is-presenting .expr-tex { font-size: 20px; }

@@ -52,6 +52,13 @@
 .float-bar.bl { bottom: 12px; left: 12px; }
 .float-bar.br { bottom: 12px; right: 12px; }
 .float-bar.bc { bottom: 14px; left: 50%; transform: translateX(-50%); }
+.float-bar.tc { top: 12px; left: 50%; transform: translateX(-50%); }
+
+/* Barre de commande basse (simulation, animation) */
+.dock { gap: 4px; padding: 5px; border-radius: 14px; }
+.dock > .btn, .dock > .seg, .dock > .sep { flex: none; }
+.dock .seg-btn { height: 30px; }
+.play-btn { --btn-h: 36px; border-radius: 10px; }
 .ortho-glyph { font-family: var(--font-serif); font-size: 18px; line-height: 1; }
 
 .tooltip {
@@ -72,6 +79,12 @@
 }
 
 /* Popovers d'outils */
+.examples-menu { min-width: 300px; }
+.help-pop { width: 340px; padding: 6px 12px 12px; }
+.help-pop table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 2px 0 10px; }
+.help-pop td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text-2); }
+.help-pop code { font-family: var(--font-mono); font-size: 12px; color: var(--text); white-space: nowrap; }
+.help-pop p { font-size: 12px; color: var(--muted); }
 .display-pop { min-width: 250px; padding: 6px 12px 10px; }
 .display-pop .menu-label { padding: 6px 0 6px; }
 

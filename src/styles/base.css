@@ -89,6 +89,8 @@ button { font: inherit; color: inherit; }
 .seg-btn.is-active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs), 0 0 0 1px var(--line); }
 .seg-btn .icon { width: 15px; height: 15px; }
 .seg.seg-block { display: flex; }
+.seg.seg-sm { border-radius: 8px; }
+.seg-sm .seg-btn { height: 24px; padding: 0 8px; font-size: 12px; border-radius: 6px; }
 .seg.seg-block > .seg-btn { flex: 1; }
 
 /* ── Champs ──────────────────────────────────────────────────────────────── */
@@ -104,6 +106,9 @@ button { font: inherit; color: inherit; }
 .input:focus, .select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .input.is-invalid { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
 .input-mono { font-family: var(--font-mono); font-size: 13px; }
+.input-sm, .select-sm { height: 28px; font-size: 12.5px; border-radius: 7px; }
+.input-sm { padding: 0 8px; }
+.select-sm { padding-left: 8px; padding-right: 24px; background-position: right 6px center; background-size: 12px; }
 .select {
   appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4.5 6.5 3.5 3.5 3.5-3.5'/%3E%3C/svg%3E");

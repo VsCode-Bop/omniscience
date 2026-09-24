@@ -44,13 +44,10 @@
 .circuit-stage { display: flex; flex-direction: column; background: var(--board); }
 .circuit-view { position: relative; flex: 1; min-height: 0; }
 
-.dock { gap: 4px; padding: 5px; border-radius: 14px; }
-.play-btn { --btn-h: 36px; border-radius: 10px; }
 .dock-clock { display: flex; align-items: baseline; gap: 6px; min-width: 92px; padding: 0 6px; font-variant-numeric: tabular-nums; }
 .dock-label { font-family: var(--font-serif); font-style: italic; font-size: 15px; color: var(--muted); }
 .dock-time { font-family: var(--font-mono); font-size: 13px; color: var(--text); }
 .dock-select { height: 30px; font-size: 12.5px; padding-left: 9px; border-color: var(--line); background-color: var(--surface-inset); box-shadow: none; }
-.dock .seg-btn { height: 30px; }
 .legend-arrow { display: inline-block; width: 12px; height: 9px; background: var(--conv-arrow); clip-path: polygon(0 0, 100% 50%, 0 100%, 35% 50%); }
 .legend-electron { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--electron); }
 .legend-both { display: inline-block; width: 16px; height: 9px; background:

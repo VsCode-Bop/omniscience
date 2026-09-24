@@ -89,9 +89,25 @@ export function tangentEquation(slope: number, intercept: number): string {
   return `y = ${ax} ${b > 0 ? '+' : '−'} ${fmt(Math.abs(b), 3)}`;
 }
 
-function drawGrid(p: Painter, s: Scene, pal: Palette): void {
+/** Repère : quadrillage, axes, graduations (partagé avec les autres modules de tracé). */
+export interface GridScene {
+  vp: Viewport;
+  opts: Pick<DisplayOptions, 'grid' | 'axes' | 'pi'>;
+  scale: number;
+  /** Noms des axes (x et y par défaut ; chaîne vide : pas de nom). */
+  axisNames?: [string, string];
+  /** Graduations entières seulement sur l'axe des abscisses (indices n). */
+  integerX?: boolean;
+}
+
+export function drawGrid(p: Painter, s: GridScene, pal: Palette): void {
   const { vp, opts } = s;
+  const [xName, yName] = s.axisNames ?? ['x', 'y'];
   const xt = opts.pi ? piTicks(vp.xmin, vp.xmax, vp.scaleX) : linearTicks(vp.xmin, vp.xmax, vp.scaleX);
+  if (s.integerX) {
+    xt.major = xt.major.filter((t) => Number.isInteger(t.value));
+    xt.minor = xt.minor.filter(Number.isInteger);
+  }
   const yt = linearTicks(vp.ymin, vp.ymax, vp.scaleY);
   if (opts.grid) {
     const minor: StrokeStyle = { color: pal.gridMinor, width: 1, cap: 'butt' };
@@ -142,7 +158,7 @@ function drawGrid(p: Painter, s: Scene, pal: Palette): void {
     p.lineTo(vp.width - arrow, oy + arrow / 2);
     p.closePath();
     p.fill(pal.axis);
-    p.text('x', vp.width - 8 * k, oy - 9 * k, { color: pal.text, size: font + 5, italic: true, family: MATH_FONT, align: 'right', baseline: 'bottom', halo: pal.bg });
+    if (xName) p.text(xName, vp.width - 8 * k, oy - 9 * k, { color: pal.text, size: font + 5, italic: true, family: MATH_FONT, align: 'right', baseline: 'bottom', halo: pal.bg });
   }
   if (ox >= 0 && ox <= vp.width) {
     p.beginPath();
@@ -151,7 +167,7 @@ function drawGrid(p: Painter, s: Scene, pal: Palette): void {
     p.lineTo(ox + arrow / 2, arrow);
     p.closePath();
     p.fill(pal.axis);
-    p.text('y', ox + 10 * k, 4 * k, { color: pal.text, size: font + 5, italic: true, family: MATH_FONT, align: 'left', baseline: 'top', halo: pal.bg });
+    if (yName) p.text(yName, ox + 10 * k, 4 * k, { color: pal.text, size: font + 5, italic: true, family: MATH_FONT, align: 'left', baseline: 'top', halo: pal.bg });
   }
 
   const labelStyle = { color: pal.text, size: font, halo: pal.bg };
