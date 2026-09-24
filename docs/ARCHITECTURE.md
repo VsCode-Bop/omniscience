@@ -80,6 +80,11 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Intégration** (`physics.ts`) : Runge-Kutta d'ordre 4 sur (x, y, vₓ, v_y), pas choisi d'après la durée de vol sans frottements (~2 400 pas), impact au sol interpolé. Les états intermédiaires sont interpolés par Hermite cubique (positions) : exact pour un mouvement uniformément accéléré, d'où une énergie mécanique conservée à 10⁻⁶ près. Tests : portée, durée, flèche et vitesse d'impact comparées aux formules, solution analytique du frottement linéaire.
 - **Scène** (`render.ts`) : repère orthonormé cadré sur la trajectoire (et les comparaisons), vecteurs à échelle fixe pendant l'animation, Δv⃗ = v⃗ᵢ₊₁ − v⃗ᵢ₋₁ construit au point Mᵢ ; le graphique temporel partage l'horloge de la scène et sert aussi de curseur.
 
+## Optique géométrique (`src/modules/optics`)
+
+- **Lentilles** : approximation de Gauss ; un rayon est une droite y = y₀ + s·(x − x₀) dont la pente devient s − y/f′ à la traversée d'une lentille mince. Le même traceur sert aux rayons particuliers, aux faisceaux et aux associations de lentilles ; les prolongements en pointillés sont tracés vers les images virtuelles et les objets virtuels. Relation de conjugaison et grandissement calculés lentille par lentille.
+- **Réfraction** : loi de Snell-Descartes sous forme vectorielle (réflexion totale détectée), intensité du rayon réfléchi dosée par les coefficients de Fresnel ; le prisme applique deux réfractions successives, l'indice suivant la loi de Cauchy n(λ) = A + B/λ². Tests : relations A = r + r′, D = i + i′ − A, minimum de déviation, grossissement −f′₁/f′₂ d'une lunette afocale.
+
 ## Export PDF
 
 `core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Le PDF est toujours produit avec la palette claire (impression) : la coquille bascule le thème de façon synchrone, appelle `readTheme()` du module, génère le SVG et rétablit le thème avant tout rafraîchissement de l'écran. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.

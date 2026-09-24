@@ -1,0 +1,26 @@
+.workspace.optics { --panel-w: 360px; }
+.optics-panel .panel-tabs-header { gap: 4px; padding-right: 8px; }
+
+.lens-note { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.lens-note i { font-family: var(--font-serif); }
+.lens-nature { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 600; }
+.lens-nature.is-real { background: var(--accent-soft); color: var(--accent); }
+.lens-nature.is-virtual { background: var(--surface-2); color: var(--text-2); border: 1px dashed var(--line-3); }
+.lens-formula { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--font-serif); font-size: 15px; }
+.lens-formula .mono { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+.frac { display: inline-grid; justify-items: center; line-height: 1.15; vertical-align: middle; }
+.frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 3px; }
+.stat .ovl, .num-symbol .ovl { font-size: .95em; }
+
+.medium { display: grid; gap: 6px; }
+.medium + .medium { margin-top: 16px; }
+.medium .num-field { margin-top: 4px; }
+.swap-btn { margin-top: 14px; }
+.measure-actions { display: flex; gap: 6px; }
+.measure-table { width: 100%; margin-top: 12px; border-collapse: collapse; font-family: var(--font-mono); font-size: 12.5px; }
+.measure-table th { padding: 6px 4px; text-align: right; font-family: var(--font-sans); font-weight: 600; font-size: 11.5px; color: var(--muted); border-bottom: 1px solid var(--line-2); }
+.measure-table td { padding: 5px 4px; text-align: right; border-bottom: 1px solid var(--line); }
+.glass-field { margin-top: 14px; }
+.panel-section > .seg + .num-field, .panel-section > .seg + .field { margin-top: 14px; }
+.panel-section .btn-sm { margin-top: 12px; }
+.refr-total { margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: var(--danger-soft); color: var(--danger); font-size: 13.5px; font-weight: 600; }
