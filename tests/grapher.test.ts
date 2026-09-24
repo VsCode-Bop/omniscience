@@ -171,3 +171,16 @@ describe('dérivée formelle', () => {
     expect(p.rows[1].fn!(3)).toBe(18);
   });
 });
+
+describe('écriture mathématique des lignes', () => {
+  it('produit un LaTeX à la française', () => {
+    const p = program('f(x) = 2.5x^2 + 1', "g(x) = f'(x)", 'a = 1.5', 'A = (1, 2)', 'x < 0 ? -x : x', 'r = 1 + cos(θ)');
+    const [f, g, a, A, abs, r] = p.rows.map((row) => row.displayTex!.replace(/\s/g, ''));
+    expect(f).toContain('f(x)=2{,}5');
+    expect(g).toContain("f'\\left(x\\right)");
+    expect(a).toBe('a=1{,}5');
+    expect(A).toBe('A\\left(1\\,;\\,2\\right)');
+    expect(abs).toContain('\\text{si}');
+    expect(r).toContain('\\theta');
+  });
+});

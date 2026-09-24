@@ -1,6 +1,6 @@
 /** Scène du simulateur : grille, composants, courants animés, bornes et étiquettes. */
 import { cssVar } from '../../../core/dom';
-import { disc, line, type Painter } from '../../../core/graphics/painter';
+import { disc, line, MONO_FONT, type Painter } from '../../../core/graphics/painter';
 import { fmtSI } from '../../../core/math/format';
 import { CATALOG } from '../model/catalog';
 import type { CircuitOptions, ElementData } from '../model/types';
@@ -28,11 +28,11 @@ export interface CircuitPalette {
 
 export function readCircuitPalette(): CircuitPalette {
   return {
-    bg: cssVar('--canvas-bg'),
-    grid: cssVar('--grid-major'),
+    bg: cssVar('--board'),
+    grid: cssVar('--board-dot'),
     wire: cssVar('--wire'),
     component: cssVar('--component'),
-    fill: cssVar('--canvas-bg'),
+    fill: cssVar('--component-fill'),
     text: cssVar('--canvas-text'),
     muted: cssVar('--canvas-muted'),
     accent: cssVar('--accent'),
@@ -248,6 +248,9 @@ export function drawCircuit(p: Painter, s: SceneInput, pal: CircuitPalette): voi
   }
 }
 
+/** Afficheur à cristaux liquides des appareils de mesure (identique dans les deux thèmes). */
+const LCD = { bg: '#0f1611', text: '#b9f6c9', dim: '#6f9b7c' };
+
 function drawLabels(p: Painter, el: ElementData, s: SceneInput, pal: CircuitPalette): void {
   const g = geometry(el);
   const k = s.scale;
@@ -262,37 +265,50 @@ function drawLabels(p: Painter, el: ElementData, s: SceneInput, pal: CircuitPale
   const name = s.labels.get(el.id) ?? '';
   const spec = CATALOG[el.type];
   const value = s.opts.values && spec.valueLabel ? spec.valueLabel(el.props) : '';
-  const labelText = [name, value].filter(Boolean).join('  ');
-  if (labelText && !meter) {
-    p.text(labelText, cx + sx * d, cy + sy * d, {
-      color: pal.text, size: 12 * k, weight: 'bold', halo: pal.bg,
-      align: vertical ? 'left' : 'center', baseline: vertical ? 'middle' : 'bottom',
-    });
-  }
 
   if (meter && st) {
-    const reading = el.type === 'ammeter' ? fmtSI(shownCurrent(st.i), 'A') : Number.isNaN(st.v) ? '— V' : fmtSI(st.v, 'V');
-    const text = `${name}  ${reading}`;
-    const w = (text.length * 7.4 + 14) * k;
-    const h = 22 * k;
+    // Boîtier d'afficheur : repère discret + lecture en chiffres « LCD ».
+    const reading = el.type === 'ammeter' ? fmtSI(shownCurrent(st.i), 'A', 3, true) : Number.isNaN(st.v) ? '— — — V' : fmtSI(st.v, 'V', 3, true);
+    const w = (reading.length * 7.6 + 34) * k;
+    const hh = 24 * k;
     const bx = vertical ? cx + sx * d : cx - w / 2;
-    const by = vertical ? cy - h / 2 : cy + sy * d - h;
+    const by = vertical ? cy - hh / 2 : cy + sy * d - hh;
     p.beginPath();
-    p.rect(bx, by, w, h);
-    p.fill(pal.surface);
-    p.stroke({ color: el.type === 'ammeter' ? pal.conv : pal.accent, width: 1.5 * k });
-    p.text(text, bx + w / 2, by + h / 2 + 0.5, {
-      color: pal.text, size: 12.5 * k, weight: 'bold', align: 'center', baseline: 'middle',
-      family: '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace',
-    });
+    p.rect(bx, by, w, hh);
+    p.fill(LCD.bg);
+    p.stroke({ color: el.type === 'ammeter' ? pal.conv : pal.accent, width: 1.4 * k });
+    p.text(name, bx + 7 * k, by + hh / 2 + 0.5, { color: LCD.dim, size: 9.5 * k, weight: 600, align: 'left', baseline: 'middle', family: MONO_FONT });
+    p.text(reading, bx + w - 7 * k, by + hh / 2 + 0.5, { color: LCD.text, size: 12.5 * k, weight: 500, align: 'right', baseline: 'middle', family: MONO_FONT });
     return;
+  }
+
+  // Repère (gras) et valeur (atténuée) sur deux lignes.
+  if (name || value) {
+    const base = { halo: pal.bg, align: (vertical ? 'left' : 'center') as 'left' | 'center' };
+    if (vertical) {
+      const x = cx + sx * d;
+      if (name && value) {
+        p.text(name, x, cy - 8 * k, { ...base, color: pal.text, size: 12.5 * k, weight: 650, baseline: 'middle' });
+        p.text(value, x, cy + 8 * k, { ...base, color: pal.muted, size: 11.5 * k, weight: 500, baseline: 'middle' });
+      } else {
+        p.text(name || value, x, cy, { ...base, color: name ? pal.text : pal.muted, size: 12.5 * k, weight: name ? 650 : 500, baseline: 'middle' });
+      }
+    } else {
+      const y = cy + sy * d;
+      if (name && value) {
+        p.text(value, cx, y, { ...base, color: pal.muted, size: 11.5 * k, weight: 500, baseline: 'bottom' });
+        p.text(name, cx, y - 15 * k, { ...base, color: pal.text, size: 12.5 * k, weight: 650, baseline: 'bottom' });
+      } else {
+        p.text(name || value, cx, y, { ...base, color: name ? pal.text : pal.muted, size: 12.5 * k, weight: name ? 650 : 500, baseline: 'bottom' });
+      }
+    }
   }
 
   if (s.opts.measures && st && el.type !== 'switch') {
     const u = el.type === 'battery' || el.type === 'acsource' || el.type === 'isource' ? -st.v : st.v;
     const text = `${fmtSI(u, 'V')} · ${fmtSI(Math.abs(shownCurrent(st.i)), 'A')}`;
     p.text(text, cx - sx * d, cy - sy * d, {
-      color: pal.muted, size: 11.5 * k, halo: pal.bg,
+      color: pal.muted, size: 11.5 * k, halo: pal.bg, family: MONO_FONT,
       align: vertical ? 'right' : 'center', baseline: vertical ? 'middle' : 'top',
     });
   }

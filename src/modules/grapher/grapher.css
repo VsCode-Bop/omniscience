@@ -1,75 +1,121 @@
-.grapher { --panel-w: 360px; }
+.grapher { --panel-w: 380px; }
 
-.grapher-panel .select { width: 100%; }
-
-.expr-list { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
+/* ── Liste des expressions ── */
+.expr-list { display: flex; flex-direction: column; }
 
 .expr-row {
   --row-color: var(--c1);
-  position: relative;
-  padding: .55rem .6rem .55rem .5rem;
-  border-bottom: 1px solid var(--border);
-  border-left: 4px solid transparent;
+  position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start;
+  border-bottom: 1px solid var(--line); background: var(--surface);
+  transition: background-color .15s;
 }
-.expr-row:last-child { border-bottom: 0; }
-.expr-row:focus-within { background: var(--surface-2); border-left-color: var(--row-color); }
-.expr-row[data-kind='param'], .expr-row[data-kind='constant'] { --row-color: var(--muted); }
+.expr-row:hover { background: var(--surface-2); }
+.expr-row.is-editing, .expr-row.is-expanded { background: var(--surface-2); }
+.expr-row.is-editing::before, .expr-row.is-expanded::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--row-color);
+}
 
-.expr-main { display: flex; align-items: center; gap: .35rem; }
-.expr-input { flex: 1; min-width: 0; }
-
+.expr-gutter {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 0 10px;
+  align-self: stretch; border-right: 1px solid var(--line);
+}
+.expr-num { font-size: 10.5px; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; line-height: 1; }
 .expr-dot {
-  flex: none; width: 22px; height: 22px; border-radius: 50%;
-  border: 3px solid var(--row-color); background: var(--row-color);
-  cursor: pointer; padding: 0; transition: background .15s;
+  width: 20px; height: 20px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 2.5px solid var(--row-color); background: var(--row-color);
+  box-shadow: inset 0 0 0 2px var(--surface);
+  transition: background-color .15s, transform .1s;
 }
-.expr-row.is-hidden .expr-dot { background: transparent; }
-.expr-row.is-hidden .expr-input { color: var(--muted); }
-.expr-dot[hidden] { display: block !important; visibility: hidden; }
+.expr-dot:hover { transform: scale(1.08); }
+.expr-row.is-hidden .expr-dot { background: transparent; box-shadow: none; }
 
-.expr-status { font-size: .78rem; color: var(--muted); padding: .2rem 0 0 2.05rem; min-height: 0; }
-.expr-status:empty { display: none; }
+.expr-body { min-width: 0; padding: 9px 4px 10px 12px; display: grid; gap: 6px; }
+.expr-field { position: relative; min-height: 34px; display: flex; align-items: center; }
+.expr-input {
+  width: 100%; height: 34px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--text); font-family: var(--font-mono); font-size: 13.5px;
+  transition: border-color .15s, background-color .15s, box-shadow .15s;
+}
+.expr-input::placeholder { color: var(--faint); font-family: var(--font-sans); }
+.expr-input:hover { background: var(--surface); border-color: var(--line-2); }
+.expr-input:focus { outline: none; background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.expr-row.is-invalid .expr-input { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+.expr-tex {
+  display: none; width: 100%; min-height: 34px; padding: 5px 10px; border-radius: 8px;
+  align-items: center; overflow-x: auto; overflow-y: hidden; cursor: text; color: var(--text);
+  font-size: 16.5px; scrollbar-width: none;
+}
+.expr-tex::-webkit-scrollbar { display: none; }
+.expr-tex:hover { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+.expr-row.has-tex:not(.is-editing) .expr-tex { display: flex; }
+.expr-row.has-tex:not(.is-editing) .expr-input { position: absolute; opacity: 0; pointer-events: none; }
+.expr-row.is-hidden .expr-tex { color: var(--muted); }
+.expr-tex .katex { font-size: 1.08em; white-space: nowrap; }
+
+.expr-status { display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; color: var(--muted); }
 .expr-status.is-error { color: var(--danger); }
 .expr-status.is-hint { color: var(--warning); }
-.expr-integral { color: var(--text); font-weight: 600; }
+.expr-integral { color: var(--text-2); font-weight: 550; font-family: var(--font-mono); font-size: 12px; }
 
-.expr-slider { display: grid; grid-template-columns: 4rem 1fr 4rem auto; gap: .4rem; align-items: center; padding: .35rem 0 0 2.05rem; }
-.expr-slider .input-num { width: 100%; padding: .2rem .35rem; min-height: 28px; font-size: .82rem; text-align: center; }
+.expr-actions { display: flex; flex-direction: column; gap: 2px; padding: 9px 8px 0 0; opacity: 0; transition: opacity .15s; }
+.expr-row:hover .expr-actions, .expr-row:focus-within .expr-actions, .expr-row.is-expanded .expr-actions { opacity: 1; }
+.expr-actions .btn .icon { color: var(--muted); }
+.expr-actions .btn.is-active { background: var(--accent-soft); }
+.expr-actions .btn.is-active .icon { color: var(--accent); }
+@media (hover: none) { .expr-actions { opacity: 1; } }
 
+/* Curseur de paramètre */
+.expr-slider { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px 28px; align-items: center; gap: 6px; padding: 0 0 0 10px; }
+.expr-slider input[type='range'] { --range-color: var(--text); }
+.slider-bound {
+  width: 100%; height: 24px; padding: 0 4px; border: 1px solid transparent; border-radius: 6px; background: transparent;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); text-align: center;
+}
+.slider-bound:hover { border-color: var(--line-2); background: var(--surface); }
+.slider-bound:focus { outline: none; border-color: var(--accent); background: var(--surface); color: var(--text); }
+
+/* Options */
 .expr-options {
-  display: grid; gap: .45rem; margin: .5rem 0 0 2.05rem; padding: .6rem .7rem;
-  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  display: grid; gap: 2px; margin: 2px 0 0 10px; padding: 10px 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line-2); box-shadow: var(--shadow-xs);
 }
-.expr-options .check { flex-wrap: wrap; font-size: .86rem; }
-.expr-options .input-num { width: 4.6rem; min-height: 28px; padding: .15rem .4rem; font-size: .85rem; }
-
-.swatches { display: flex; gap: .35rem; flex-wrap: wrap; }
+.opt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.opt-label { flex: 1; min-width: 0; }
+.opt-inline { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mini-input { width: 52px; height: 28px; padding: 0 7px; font-family: var(--font-mono); font-size: 12.5px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
 .swatch {
-  width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface); padding: 0;
-  background: var(--swatch); cursor: pointer; box-shadow: 0 0 0 1px var(--border);
+  width: 22px; height: 22px; padding: 0; border-radius: 50%; cursor: pointer;
+  background: var(--swatch); border: 0; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+  transition: transform .12s;
 }
-.swatch.is-active { box-shadow: 0 0 0 2px var(--text); }
+.swatch:hover { transform: scale(1.1); }
+.swatch.is-active { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--swatch); }
 
+/* Étude */
 .expr-study {
-  margin: .5rem 0 0 2.05rem; padding: .6rem .7rem; font-size: .88rem;
-  border-left: 3px solid var(--row-color); background: var(--surface-2); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  display: grid; gap: .45rem; overflow-x: auto;
+  display: grid; gap: 10px; margin: 4px 0 0 10px; padding: 12px 14px; border-radius: 10px; overflow-x: auto;
+  background: var(--surface); border: 1px solid var(--line-2); border-left: 3px solid var(--row-color);
 }
-.study-item { display: grid; gap: .1rem; }
-.study-label { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.study-value { display: grid; gap: .2rem; }
-.study-sub { display: grid; gap: .15rem; }
-.study-note { font-size: .75rem; margin: 0; }
-.expr-study .katex { font-size: 1.02em; }
+.study-item { display: grid; gap: 3px; }
+.study-label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.study-value { display: grid; gap: 3px; font-size: 14px; }
+.study-sub { display: grid; gap: 2px; }
+.study-note { font-size: 11.5px; color: var(--faint); }
+.expr-study .katex { font-size: 1.04em; }
 
-.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem .75rem; }
+.expr-add {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 44px; padding: 0 16px 0 56px;
+  border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left;
+}
+.expr-add:hover { color: var(--text); background: var(--surface-2); }
 
-.help summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
-.help table { width: 100%; border-collapse: collapse; font-size: .82rem; margin: .6rem 0; }
-.help td { padding: .25rem .3rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-.help code { font-family: var(--font-math); font-size: .82rem; white-space: nowrap; }
-.help p { font-size: .8rem; margin: 0; }
+/* Popovers */
+.examples-menu { min-width: 300px; }
+.help-pop { width: 330px; padding: 6px 12px 12px; }
+.help-pop table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 2px 0 10px; }
+.help-pop td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text-2); }
+.help-pop code { font-family: var(--font-mono); font-size: 12px; color: var(--text); white-space: nowrap; }
+.help-pop p { font-size: 12px; color: var(--muted); }
 
-.ortho-glyph { font-weight: 700; font-size: 1.1rem; line-height: 1; }
-
-html.is-presenting .expr-input { font-size: 1.15rem; }
+html.is-presenting .expr-tex { font-size: 20px; }

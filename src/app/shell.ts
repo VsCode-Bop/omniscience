@@ -1,17 +1,16 @@
-import { clear, debounce, h, svgIcon } from '../core/dom';
+import { clear, debounce, dismissable, h, svgIcon } from '../core/dom';
 import { downloadBlob, downloadText, timestampedName } from '../core/export/download';
 import { icon } from '../core/icons';
 import type { ModuleDefinition, ModuleInstance } from '../core/types';
 import { buildHash, decodeState, encodeState, parseHash, shareUrl } from '../core/url-state';
 import { renderHome, renderPlanned } from './home';
 import { togglePresentation } from './presentation';
-import { findModule } from './registry';
+import { CATEGORIES, findModule, MODULES } from './registry';
 import { openShareDialog } from './share-dialog';
-import { cycleTheme, getThemePref, THEME_LABELS, type ThemePref } from './theme';
+import { getThemePref, setThemePref, type ThemePref } from './theme';
 import { toast } from './toast';
 
 const REPO_URL = 'https://github.com/VsCode-Bop/omniscience';
-const THEME_ICONS: Record<ThemePref, string> = { auto: 'auto', light: 'sun', dark: 'moon' };
 
 interface Active {
   def: ModuleDefinition;
@@ -19,66 +18,131 @@ interface Active {
 }
 
 /**
- * Coquille de l'application : barre supérieure, routage par fragment (#/module?s=…),
- * cycle de vie des modules, partage et exports.
+ * Coquille de l'application : barre latérale de navigation, en-tête contextuel,
+ * routage par fragment (#/module?s=…), cycle de vie des modules, partage et exports.
  * Le routage par « hash » est le seul compatible avec GitHub Pages sans configuration.
  */
 export class Shell {
+  private readonly app: HTMLElement;
   private readonly view: HTMLElement;
-  private readonly titleEl: HTMLElement;
+  private readonly crumbs: HTMLElement;
   private readonly moduleActions: HTMLElement;
-  private readonly themeBtn: HTMLButtonElement;
-  private readonly exportMenu: HTMLElement;
+  private readonly exportBtn: HTMLButtonElement;
+  private readonly navItems = new Map<string, HTMLAnchorElement>();
+  private readonly themeButtons = new Map<ThemePref, HTMLButtonElement>();
   private active: Active | null = null;
+  private cleanupView: (() => void) | null = null;
+  private closeMenu: (() => void) | null = null;
   private navToken = 0;
   /** Dernier fragment écrit par l'application elle-même (pour ignorer l'écho). */
   private writtenHash = '';
 
   constructor(root: HTMLElement) {
-    this.titleEl = h('span', { class: 'topbar-title' });
-    this.themeBtn = h('button', { class: 'btn btn-icon', onclick: () => this.onTheme() });
-    this.exportMenu = h('div', { class: 'menu', role: 'menu', hidden: true });
+    this.app = root;
+    root.classList.add('app');
 
-    const exportBtn = h('button', { class: 'btn', 'aria-haspopup': 'menu', onclick: (e: Event) => { e.stopPropagation(); this.toggleExportMenu(); } },
-      svgIcon(icon('download')), h('span', { class: 'hide-sm' }, 'Exporter'), svgIcon(icon('chevronDown'), 'icon icon-sm'),
+    // ── Barre latérale ──
+    const nav = h('nav', { class: 'sidebar-nav', 'aria-label': 'Modules' },
+      this.navLink('', 'Accueil', 'home'),
+      ...(Object.keys(CATEGORIES) as (keyof typeof CATEGORIES)[]).map((cat) =>
+        h('div', { class: 'nav-section', 'data-cat': cat },
+          h('div', { class: 'nav-title' }, CATEGORIES[cat].title),
+          ...MODULES.filter((m) => m.category === cat).map((m) => this.navLink(m.id, m.title, m.icon, m.status === 'planned')),
+        ),
+      ),
     );
-    this.moduleActions = h('div', { class: 'topbar-group' },
+    const themeSeg = h('div', { class: 'seg theme-seg', role: 'radiogroup', 'aria-label': 'Thème' },
+      ...([['auto', 'monitor', 'Automatique'], ['light', 'sun', 'Clair'], ['dark', 'moon', 'Sombre']] as [ThemePref, string, string][]).map(([pref, ic, label]) => {
+        const b = h('button', { class: 'seg-btn', role: 'radio', title: `Thème ${label.toLowerCase()}`, 'aria-label': `Thème ${label.toLowerCase()}`, onclick: () => this.setTheme(pref) }, svgIcon(icon(ic)));
+        this.themeButtons.set(pref, b);
+        return b;
+      }),
+    );
+    const sidebar = h('aside', { class: 'sidebar', 'aria-label': 'Navigation' },
+      h('div', { class: 'sidebar-head' },
+        h('a', { class: 'brand', href: '#/', 'aria-label': 'OmniScience — accueil' },
+          h('span', { class: 'brand-mark' }, svgIcon(icon('logo'))),
+          h('span', { class: 'brand-name' }, 'OmniScience'),
+        ),
+        h('button', { class: 'btn btn-ghost btn-icon btn-sm sidebar-toggle', title: 'Réduire / déplier le menu', 'aria-label': 'Réduire ou déplier le menu', onclick: () => this.toggleSidebar() }, svgIcon(icon('sidebar'))),
+      ),
+      nav,
+      h('div', { class: 'sidebar-foot' },
+        themeSeg,
+        h('a', { class: 'btn btn-ghost btn-icon btn-sm', href: REPO_URL, target: '_blank', rel: 'noopener', title: 'Code source (GitHub)', 'aria-label': 'Code source sur GitHub' }, svgIcon(icon('github'))),
+      ),
+    );
+
+    // ── En-tête ──
+    this.crumbs = h('div', { class: 'crumbs' });
+    this.exportBtn = h('button', { class: 'btn', 'aria-haspopup': 'menu', onclick: () => this.openExportMenu() },
+      svgIcon(icon('download')), h('span', { class: 'hide-sm' }, 'Exporter'), svgIcon(icon('chevronDown'), 'icon icon-sm chevron'),
+    );
+    this.moduleActions = h('div', { class: 'topbar-actions' },
       h('button', { class: 'btn', title: 'Partager un lien vers cette configuration', onclick: () => this.share() },
         svgIcon(icon('share')), h('span', { class: 'hide-sm' }, 'Partager'),
       ),
-      h('div', { class: 'menu-anchor' }, exportBtn, this.exportMenu),
-    );
-
-    const topbar = h('header', { class: 'topbar' },
-      h('a', { class: 'brand', href: '#/', 'aria-label': 'OmniScience — accueil' },
-        svgIcon(icon('logo'), 'icon brand-logo'), h('span', { class: 'brand-name' }, 'Omni', h('b', null, 'Science')),
+      h('div', { class: 'popover-anchor' }, this.exportBtn),
+      h('span', { class: 'topbar-sep' }),
+      h('button', { class: 'btn btn-primary', title: 'Mode présentation (touche P)', onclick: () => void togglePresentation() },
+        svgIcon(icon('presentation')), h('span', { class: 'hide-sm' }, 'Présenter'),
       ),
-      this.titleEl,
+    );
+    const topbar = h('header', { class: 'topbar' },
+      h('button', { class: 'btn btn-ghost btn-icon menu-btn', 'aria-label': 'Ouvrir le menu', onclick: () => this.app.classList.add('drawer-open') }, svgIcon(icon('menu'))),
+      this.crumbs,
       h('div', { class: 'topbar-spacer' }),
       h('span', { class: 'offline-badge', title: 'Hors-ligne : l\'application reste utilisable' }, svgIcon(icon('wifiOff'), 'icon icon-sm'), 'Hors-ligne'),
       this.moduleActions,
-      h('div', { class: 'topbar-group' },
-        h('button', { class: 'btn btn-icon', title: 'Mode présentation (P)', 'aria-label': 'Mode présentation', onclick: () => void togglePresentation() }, svgIcon(icon('presentation'))),
-        this.themeBtn,
-        h('a', { class: 'btn btn-icon hide-sm', href: REPO_URL, target: '_blank', rel: 'noopener', title: 'Code source sur GitHub', 'aria-label': 'Code source sur GitHub' }, svgIcon(icon('github'))),
-      ),
     );
 
     this.view = h('main', { id: 'view', class: 'view', tabindex: '-1' });
     const exitPresentation = h('button', { class: 'btn present-exit', onclick: () => void togglePresentation() },
-      svgIcon(icon('minimize')), 'Quitter la présentation',
+      svgIcon(icon('minimize')), 'Quitter la présentation', h('kbd', null, 'Échap'),
     );
-    root.append(topbar, this.view, exitPresentation);
+    const scrim = h('div', { class: 'scrim', onclick: () => this.app.classList.remove('drawer-open') });
+    root.append(sidebar, h('div', { class: 'main' }, topbar, this.view), scrim, exitPresentation);
 
-    this.renderThemeButton();
-    document.addEventListener('click', () => (this.exportMenu.hidden = true));
+    this.syncTheme();
     window.addEventListener('hashchange', () => this.route());
-    window.addEventListener('omni:themechange', () => this.active?.instance.refresh?.());
+    window.addEventListener('omni:themechange', () => {
+      this.syncTheme();
+      this.active?.instance.refresh?.();
+    });
     window.addEventListener('omni:presentationchange', () => this.active?.instance.refresh?.());
+    // Les scènes Canvas sont redessinées une fois les polices embarquées chargées.
+    void document.fonts?.ready.then(() => this.active?.instance.refresh?.());
   }
 
   start(): void {
     void this.route();
+  }
+
+  private navLink(id: string, label: string, ic: string, soon = false): HTMLAnchorElement {
+    const a = h('a', { class: `nav-item${soon ? ' is-soon' : ''}`, href: `#/${id}`, title: soon ? `${label} (en préparation)` : label, onclick: () => this.app.classList.remove('drawer-open') },
+      h('span', { class: 'nav-icon' }, svgIcon(icon(ic))),
+      h('span', { class: 'nav-label' }, label),
+      soon ? h('span', { class: 'nav-soon', 'aria-label': 'en préparation' }) : null,
+    );
+    this.navItems.set(id, a);
+    return a;
+  }
+
+  private toggleSidebar(): void {
+    this.app.classList.toggle('sidebar-collapsed');
+  }
+
+  private setTheme(pref: ThemePref): void {
+    setThemePref(pref);
+    this.syncTheme();
+  }
+
+  private syncTheme(): void {
+    const pref = getThemePref();
+    for (const [p, b] of this.themeButtons) {
+      b.classList.toggle('is-active', p === pref);
+      b.setAttribute('aria-checked', String(p === pref));
+    }
   }
 
   private async route(): Promise<void> {
@@ -89,14 +153,19 @@ export class Shell {
     this.unmount();
     clear(this.view);
     const def = moduleId ? findModule(moduleId) : undefined;
-    document.title = def ? `${def.title} — OmniScience` : 'OmniScience — outils STEM pour la classe';
-    this.titleEl.textContent = def?.title ?? '';
+    document.title = def ? `${def.title} — OmniScience` : 'OmniScience — le laboratoire numérique des cours de sciences';
+    this.renderCrumbs(def);
+    for (const [id, a] of this.navItems) a.classList.toggle('is-active', id === (def?.id ?? ''));
     this.moduleActions.hidden = true;
     this.view.dataset.module = def?.id ?? 'home';
+    this.app.dataset.route = def?.load ? 'tool' : 'page';
+    // Dans un outil, la barre latérale se réduit en rail pour laisser la place à l'espace de travail.
+    this.app.classList.toggle('sidebar-collapsed', !!def?.load);
+    this.view.scrollTop = 0;
 
     if (!def) {
       if (moduleId) toast(`Module « ${moduleId} » introuvable.`, 'error');
-      renderHome(this.view);
+      this.cleanupView = renderHome(this.view);
       return;
     }
     if (!def.load) {
@@ -104,7 +173,7 @@ export class Shell {
       return;
     }
 
-    this.view.append(h('div', { class: 'loading' }, h('div', { class: 'spinner' }), `Chargement de ${def.title}…`));
+    this.view.append(h('div', { class: 'loading' }, h('div', { class: 'spinner' }), `Chargement — ${def.title}`));
     try {
       const entry = await def.load();
       if (token !== this.navToken) return; // navigation plus récente entre-temps
@@ -119,18 +188,34 @@ export class Shell {
       });
       this.active = { def, instance };
       this.moduleActions.hidden = false;
-      this.buildExportMenu(instance);
+      this.exportBtn.disabled = !instance.exportPNG && !instance.exportSVG;
     } catch (err) {
       console.error(err);
       if (token !== this.navToken) return;
       clear(this.view);
       this.view.append(
-        h('div', { class: 'planned' }, h('h1', null, 'Impossible de charger le module'), h('p', null, String(err)), h('a', { class: 'btn', href: '#/' }, 'Accueil')),
+        h('div', { class: 'page narrow' }, h('h1', null, 'Impossible de charger le module'), h('p', { class: 'muted' }, String(err)), h('a', { class: 'btn', href: '#/' }, 'Accueil')),
       );
     }
   }
 
+  private renderCrumbs(def: ModuleDefinition | undefined): void {
+    clear(this.crumbs);
+    if (!def) {
+      this.crumbs.append(h('span', { class: 'crumb-title' }, 'Accueil'));
+      return;
+    }
+    this.crumbs.append(
+      h('span', { class: `crumb-cat cat-${def.category}` }, CATEGORIES[def.category].title),
+      svgIcon(icon('chevronRight'), 'icon icon-sm crumb-sep'),
+      h('span', { class: 'crumb-title' }, def.title),
+    );
+  }
+
   private unmount(): void {
+    this.closeMenu?.();
+    this.cleanupView?.();
+    this.cleanupView = null;
     if (this.active) {
       this.active.instance.destroy();
       this.active = null;
@@ -150,50 +235,48 @@ export class Shell {
     openShareDialog(shareUrl(this.active.def.id, state), this.active.def.title);
   }
 
-  private buildExportMenu(instance: ModuleInstance): void {
-    clear(this.exportMenu);
+  private openExportMenu(): void {
+    if (this.closeMenu) {
+      this.closeMenu();
+      return;
+    }
+    const instance = this.active?.instance;
+    if (!instance) return;
     const base = this.active!.def.id;
-    const item = (label: string, detail: string, enabled: boolean, run: () => Promise<void> | void) =>
+    const title = this.active!.def.title;
+    const menu = h('div', { class: 'menu', role: 'menu' });
+    const item = (ic: string, label: string, detail: string, enabled: boolean, run: () => Promise<void> | void) =>
       h('button', { class: 'menu-item', role: 'menuitem', disabled: !enabled, onclick: async () => {
-        this.exportMenu.hidden = true;
+        this.closeMenu?.();
         try {
           await run();
         } catch (err) {
           console.error(err);
           toast(`Échec de l'export : ${String(err)}`, 'error');
         }
-      } }, h('strong', null, label), h('span', null, detail));
+      } }, svgIcon(icon(ic)), h('strong', null, label), h('small', null, detail));
 
-    this.exportMenu.append(
-      item('PNG', 'Image haute résolution', !!instance.exportPNG, async () => {
+    menu.append(
+      h('div', { class: 'menu-label' }, 'Exporter la vue'),
+      item('download', 'Image PNG', 'Haute résolution, pour diaporamas et ENT', !!instance.exportPNG, async () => {
         downloadBlob(await instance.exportPNG!(), timestampedName(base, 'png'));
       }),
-      item('SVG', 'Vectoriel, éditable (Inkscape…)', !!instance.exportSVG, () => {
-        downloadText(instance.exportSVG!(), timestampedName(base, 'svg'), 'image/svg+xml');
-      }),
-      item('PDF', 'Vectoriel, prêt à imprimer', !!instance.exportSVG, async () => {
+      item('worksheet', 'Document PDF', 'Vectoriel, prêt à imprimer', !!instance.exportSVG, async () => {
         toast('Génération du PDF…');
         const { svgToPdf } = await import('../core/export/pdf');
-        downloadBlob(await svgToPdf(instance.exportSVG!(), this.active?.def.title ?? 'OmniScience'), timestampedName(base, 'pdf'));
+        downloadBlob(await svgToPdf(instance.exportSVG!(), title), timestampedName(base, 'pdf'));
+      }),
+      item('graph', 'Dessin SVG', 'Vectoriel, modifiable (Inkscape, LibreOffice)', !!instance.exportSVG, () => {
+        downloadText(instance.exportSVG!(), timestampedName(base, 'svg'), 'image/svg+xml');
       }),
     );
-  }
-
-  private toggleExportMenu(): void {
-    this.exportMenu.hidden = !this.exportMenu.hidden;
-  }
-
-  private onTheme(): void {
-    const pref = cycleTheme();
-    this.renderThemeButton();
-    toast(THEME_LABELS[pref]);
-  }
-
-  private renderThemeButton(): void {
-    const pref = getThemePref();
-    clear(this.themeBtn);
-    this.themeBtn.append(svgIcon(icon(THEME_ICONS[pref])));
-    this.themeBtn.title = `${THEME_LABELS[pref]} (cliquer pour changer)`;
-    this.themeBtn.setAttribute('aria-label', THEME_LABELS[pref]);
+    this.exportBtn.parentElement!.append(menu);
+    this.exportBtn.setAttribute('aria-expanded', 'true');
+    this.closeMenu = dismissable(menu, () => {
+      menu.remove();
+      this.exportBtn.setAttribute('aria-expanded', 'false');
+      this.closeMenu = null;
+    }, this.exportBtn);
   }
 }
+

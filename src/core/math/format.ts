@@ -40,15 +40,18 @@ const SI_PREFIXES: [number, string][] = [
   [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p'],
 ];
 
-/** Grandeur physique avec préfixe SI : fmtSI(0.0123, 'A') → "12,3 mA". */
-export function fmtSI(x: number, unit: string, digits = 3): string {
+/**
+ * Grandeur physique avec préfixe SI : fmtSI(0.0123, 'A') → "12,3 mA".
+ * `keepZeros` conserve les zéros significatifs (afficheurs : "4,500 V").
+ */
+export function fmtSI(x: number, unit: string, digits = 3, keepZeros = false): string {
   if (!Number.isFinite(x)) return `${fmt(x)} ${unit}`;
   const abs = Math.abs(x);
-  if (abs < 1e-13) return `0 ${unit}`;
+  if (abs < 1e-13) return `${keepZeros ? frenchify((0).toFixed(digits - 1)) : '0'} ${unit}`;
   for (const [factor, prefix] of SI_PREFIXES) {
     if (abs >= factor * 0.9995 || factor === 1e-12) {
-      const v = x / factor;
-      return `${frenchify(trimZeros(v.toPrecision(digits)))} ${prefix}${unit}`;
+      const v = (x / factor).toPrecision(digits);
+      return `${frenchify(keepZeros ? v : trimZeros(v))} ${prefix}${unit}`;
     }
   }
   return `${fmt(x)} ${unit}`;

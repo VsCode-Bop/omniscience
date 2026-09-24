@@ -40,7 +40,10 @@ export interface Painter {
   text(str: string, x: number, y: number, style: TextStyle): void;
 }
 
-export const DEFAULT_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+export const DEFAULT_FONT = 'Geist, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+/** Police des notations mathématiques (variables en italique, noms de courbes). */
+export const MATH_FONT = '"Source Serif 4", "Iowan Old Style", Georgia, serif';
+export const MONO_FONT = '"Geist Mono", ui-monospace, Menlo, Consolas, monospace';
 
 /** Raccourci : segment isolé. */
 export function line(p: Painter, x1: number, y1: number, x2: number, y2: number, style: StrokeStyle): void {

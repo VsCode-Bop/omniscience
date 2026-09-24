@@ -62,3 +62,42 @@ export function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: numb
 export function cssVar(name: string, el: Element = document.documentElement): string {
   return getComputedStyle(el).getPropertyValue(name).trim();
 }
+
+/** Met à jour le remplissage d'un curseur stylé (variable CSS --fill). */
+export function syncRange(range: HTMLInputElement): void {
+  const min = Number(range.min || 0);
+  const max = Number(range.max || 100);
+  const v = Number(range.value);
+  range.style.setProperty('--fill', `${max > min ? ((v - min) / (max - min)) * 100 : 0}%`);
+}
+
+/** Curseur stylé : le remplissage suit la valeur. */
+export function bindRange(range: HTMLInputElement): HTMLInputElement {
+  syncRange(range);
+  range.addEventListener('input', () => syncRange(range));
+  return range;
+}
+
+/**
+ * Ferme un popover au clic extérieur ou sur Échap ; retourne la fonction de fermeture.
+ * `ignore` : élément déclencheur (son propre clic bascule le popover).
+ */
+export function dismissable(el: HTMLElement, onClose: () => void, ignore?: Element): () => void {
+  const onDown = (e: PointerEvent) => {
+    const t = e.target as Node;
+    if (!el.contains(t) && !ignore?.contains(t)) close();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') close();
+  };
+  const close = () => {
+    document.removeEventListener('pointerdown', onDown, true);
+    document.removeEventListener('keydown', onKey, true);
+    onClose();
+  };
+  setTimeout(() => {
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('keydown', onKey, true);
+  });
+  return close;
+}

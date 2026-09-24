@@ -1,84 +1,158 @@
-/* ── Jetons de conception : toute couleur passe par ces variables (thèmes clair/sombre). ── */
+/*
+ * Jetons de conception. Toute couleur de l'interface et des scènes Canvas passe par
+ * ces variables : le thème sombre ne fait que les redéfinir.
+ *
+ * Parti pris : neutres chauds (papier), boutons principaux à l'encre, couleur réservée
+ * au sens (disciplines, courbes, grandeurs physiques) plutôt qu'à la décoration.
+ */
 :root {
   color-scheme: light;
-  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  --font-math: 'JetBrains Mono', 'Cascadia Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  --radius: 10px;
-  --radius-sm: 7px;
-  --topbar-h: 52px;
-  --shadow: 0 1px 2px rgb(15 23 42 / 6%), 0 4px 16px rgb(15 23 42 / 6%);
-  --shadow-lg: 0 10px 40px rgb(15 23 42 / 18%);
 
-  --bg: #f5f7fb;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-serif: 'Source Serif 4', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --topbar-h: 56px;
+  --sidebar-w: 248px;
+  --rail-w: 64px;
+
+  /* Surfaces */
+  --bg: #f4f3ef;
   --surface: #ffffff;
-  --surface-2: #f0f3f8;
-  --surface-3: #e6ebf3;
-  --border: #dde3ec;
-  --text: #0f172a;
-  --muted: #5b6577;
-  --accent: #2563eb;
-  --accent-soft: rgb(37 99 235 / 12%);
-  --accent-contrast: #ffffff;
-  --danger: #dc2626;
-  --success: #15803d;
-  --warning: #b45309;
+  --surface-2: #fafaf8;
+  --surface-3: #f0efeb;
+  --surface-inset: #f3f2ee;
+  --line: rgb(24 24 27 / 8%);
+  --line-2: rgb(24 24 27 / 13%);
+  --line-3: rgb(24 24 27 / 22%);
 
-  /* Zones de dessin */
+  /* Texte */
+  --text: #17171a;
+  --text-2: #3d3d44;
+  --muted: #6e6e78;
+  --faint: #a3a3ab;
+
+  /* Encre (boutons principaux) et accent (focus, sélection) */
+  --ink: #17171a;
+  --ink-hover: #2e2e33;
+  --ink-contrast: #fbfbfa;
+  --accent: #3553f5;
+  --accent-soft: rgb(53 83 245 / 10%);
+  --accent-line: rgb(53 83 245 / 35%);
+
+  /* Disciplines */
+  --maths: #4353e6;
+  --maths-soft: rgb(67 83 230 / 9%);
+  --physique: #e2552b;
+  --physique-soft: rgb(226 85 43 / 9%);
+  --enseignant: #0f8a6c;
+  --enseignant-soft: rgb(15 138 108 / 9%);
+
+  /* États */
+  --danger: #dc3a3f;
+  --danger-soft: rgb(220 58 63 / 10%);
+  --success: #138a4c;
+  --success-soft: rgb(19 138 76 / 10%);
+  --warning: #b35d00;
+  --warning-soft: rgb(230 140 20 / 13%);
+
+  --shadow-xs: 0 1px 2px rgb(20 20 24 / 6%);
+  --shadow-sm: 0 1px 2px rgb(20 20 24 / 5%), 0 2px 10px -3px rgb(20 20 24 / 9%);
+  --shadow-md: 0 1px 2px rgb(20 20 24 / 4%), 0 10px 30px -10px rgb(20 20 24 / 18%);
+  --shadow-lg: 0 2px 6px rgb(20 20 24 / 6%), 0 28px 70px -18px rgb(20 20 24 / 32%);
+
+  /* Scènes de dessin */
   --canvas-bg: #ffffff;
-  --grid-minor: #eef1f6;
-  --grid-major: #d6dce6;
-  --axis: #334155;
-  --canvas-text: #334155;
-  --canvas-muted: #7a8699;
+  --grid-minor: rgb(53 83 245 / 5.5%);
+  --grid-major: rgb(53 83 245 / 13%);
+  --axis: #26262b;
+  --canvas-text: #3d3d44;
+  --canvas-muted: #8a8a93;
 
-  /* Palette des courbes (indexée : s'adapte au thème) */
-  --c1: #2563eb; --c2: #dc2626; --c3: #16a34a; --c4: #9333ea;
-  --c5: #ea580c; --c6: #0891b2; --c7: #db2777; --c8: #4d7c0f;
+  /* Couleurs des courbes (indexées, suivent le thème) */
+  --c1: #3553f5; --c2: #e5484d; --c3: #12a150; --c4: #8e4ec6;
+  --c5: #f76b15; --c6: #0894b3; --c7: #d6409f; --c8: #8a6a4f;
 
   /* Circuits */
-  --wire: #334155;
-  --component: #1e293b;
-  --conv-arrow: #dc2626;
-  --electron: #1d4ed8;
-  --pot-low: #2563eb;
-  --pot-high: #ea580c;
-  --lamp-glow: #facc15;
+  --board: #fbfaf7;
+  --board-dot: rgb(24 24 27 / 16%);
+  --wire: #26262b;
+  --component: #26262b;
+  --component-fill: #ffffff;
+  --conv-arrow: #e5484d;
+  --electron: #2f5bff;
+  --pot-low: #3553f5;
+  --pot-high: #f76b15;
+  --lamp-glow: #ffc53d;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
-  --shadow-lg: 0 10px 40px rgb(0 0 0 / 50%);
 
-  --bg: #0a0f1c;
-  --surface: #111827;
-  --surface-2: #172033;
-  --surface-3: #1f2a40;
-  --border: #253149;
-  --text: #e6eaf2;
-  --muted: #95a1b6;
-  --accent: #60a5fa;
-  --accent-soft: rgb(96 165 250 / 16%);
-  --accent-contrast: #0a0f1c;
-  --danger: #f87171;
-  --success: #4ade80;
-  --warning: #fbbf24;
+  --bg: #0b0b0d;
+  --surface: #131316;
+  --surface-2: #17171b;
+  --surface-3: #202025;
+  --surface-inset: #0f0f12;
+  --line: rgb(255 255 255 / 7%);
+  --line-2: rgb(255 255 255 / 11%);
+  --line-3: rgb(255 255 255 / 20%);
 
-  --canvas-bg: #0d1424;
-  --grid-minor: #152036;
-  --grid-major: #223050;
-  --axis: #cbd5e1;
-  --canvas-text: #cbd5e1;
-  --canvas-muted: #7d8aa3;
+  --text: #ededf0;
+  --text-2: #c2c2c9;
+  --muted: #8b8b95;
+  --faint: #5d5d66;
 
-  --c1: #60a5fa; --c2: #f87171; --c3: #4ade80; --c4: #c084fc;
-  --c5: #fb923c; --c6: #22d3ee; --c7: #f472b6; --c8: #a3e635;
+  --ink: #f4f4f5;
+  --ink-hover: #dcdce0;
+  --ink-contrast: #111114;
+  --accent: #7d8fff;
+  --accent-soft: rgb(125 143 255 / 14%);
+  --accent-line: rgb(125 143 255 / 40%);
 
-  --wire: #cbd5e1;
-  --component: #e2e8f0;
-  --conv-arrow: #f87171;
-  --electron: #7dd3fc;
-  --pot-low: #60a5fa;
-  --pot-high: #fb923c;
-  --lamp-glow: #fde047;
+  --maths: #8390ff;
+  --maths-soft: rgb(131 144 255 / 12%);
+  --physique: #ff8a5c;
+  --physique-soft: rgb(255 138 92 / 12%);
+  --enseignant: #3fcf9f;
+  --enseignant-soft: rgb(63 207 159 / 12%);
+
+  --danger: #ff6369;
+  --danger-soft: rgb(255 99 105 / 13%);
+  --success: #3dd68c;
+  --success-soft: rgb(61 214 140 / 12%);
+  --warning: #ffb34d;
+  --warning-soft: rgb(255 179 77 / 12%);
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%), 0 2px 10px -3px rgb(0 0 0 / 50%);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 32px -10px rgb(0 0 0 / 60%);
+  --shadow-lg: 0 2px 6px rgb(0 0 0 / 40%), 0 28px 70px -18px rgb(0 0 0 / 75%);
+
+  --canvas-bg: #0f0f12;
+  --grid-minor: rgb(140 152 255 / 6%);
+  --grid-major: rgb(140 152 255 / 13%);
+  --axis: #d6d6dc;
+  --canvas-text: #c8c8cf;
+  --canvas-muted: #7c7c86;
+
+  --c1: #7d8fff; --c2: #ff6369; --c3: #3dd68c; --c4: #b98cf5;
+  --c5: #ff9b5c; --c6: #4cc3e0; --c7: #f07cc4; --c8: #c9a58f;
+
+  --board: #0f0f12;
+  --board-dot: rgb(255 255 255 / 13%);
+  --wire: #d6d6dc;
+  --component: #e4e4e8;
+  --component-fill: #16161a;
+  --conv-arrow: #ff6369;
+  --electron: #7aa2ff;
+  --pot-low: #7d8fff;
+  --pot-high: #ff9b5c;
+  --lamp-glow: #ffd166;
 }

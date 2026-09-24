@@ -2,7 +2,7 @@
  * Module « Grapheuse » : point d'entrée (chargé à la demande par le shell).
  */
 import './grapher.css';
-import { debounce, h, svgIcon } from '../../core/dom';
+import { debounce, dismissable, h, svgIcon } from '../../core/dom';
 import { canvasToBlob } from '../../core/export/download';
 import { CanvasPainter, fitCanvas } from '../../core/graphics/canvas-painter';
 import { SvgPainter } from '../../core/graphics/svg-painter';
@@ -33,6 +33,8 @@ interface Pos {
 
 const isPresenting = () => document.documentElement.classList.contains('is-presenting');
 
+type KatexModule = typeof import('katex').default;
+
 /** Évalue une saisie numérique simple : « 2,5 », « pi/2 », « -3 », « sqrt(2) ». */
 function parseNumber(text: string): number {
   const t = text.trim().replace(/^(-?\d+),(\d+)$/, '$1.$2');
@@ -56,9 +58,8 @@ class GrapherApp implements ModuleInstance, PanelHost {
   private readonly stage: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly tooltip: HTMLElement;
-  private readonly optionInputs = new Map<keyof GrapherState['opts'], HTMLInputElement>();
+  private readonly readout: HTMLElement;
   private readonly orthoBtn: HTMLButtonElement;
-  private readonly examples: HTMLSelectElement;
   private readonly views = new Map<string, RowView>();
   private points: ScenePoint[] = [];
   private readonly pinned = new Set<string>();
@@ -74,6 +75,8 @@ class GrapherApp implements ModuleInstance, PanelHost {
   private drag: Drag | null = null;
   private downPos: Pos | null = null;
   private moved = false;
+  private closePopover: (() => void) | null = null;
+  private katex: KatexModule | null = null;
   private readonly resizeObserver: ResizeObserver;
   private readonly refreshStudies = debounce(() => this.views.forEach((v) => v.refreshStudy()), 250);
 
@@ -81,80 +84,54 @@ class GrapherApp implements ModuleInstance, PanelHost {
     this.state = sanitizeState(ctx.initialState) ?? defaultState();
     if (!this.state.rows.length) this.state.rows.push({ id: newId(), src: '', color: 0 });
 
-    // ── Panneau latéral ──
+    // ── Panneau des expressions ──
     this.list = h('div', { class: 'expr-list' });
-    this.examples = h('select', { class: 'select', 'aria-label': 'Charger un exemple' },
-      h('option', { value: '' }, 'Exemples…'),
-      ...EXAMPLES.map((ex, i) => h('option', { value: String(i) }, `${ex.title} — ${ex.level}`)),
-    );
-    this.examples.addEventListener('change', () => this.loadExample());
-
-    const option = (key: keyof GrapherState['opts'], label: string) => {
-      const input = h('input', { type: 'checkbox' });
-      input.addEventListener('change', () => this.setOption(key, input.checked));
-      this.optionInputs.set(key, input);
-      return h('label', { class: 'check' }, input, label);
-    };
+    const examplesBtn = h('button', { class: 'btn btn-sm', 'aria-haspopup': 'menu' }, svgIcon(icon('book')), 'Exemples', svgIcon(icon('chevronDown'), 'icon icon-sm'));
+    examplesBtn.addEventListener('click', () => this.openExamples(examplesBtn));
+    const helpBtn = h('button', { class: 'btn btn-ghost btn-icon btn-sm', title: 'Aide-mémoire de saisie', 'aria-label': 'Aide-mémoire de saisie' }, svgIcon(icon('info')));
+    helpBtn.addEventListener('click', () => this.openHelp(helpBtn));
 
     const panel = h('aside', { class: 'panel grapher-panel', 'aria-label': 'Expressions' },
-      h('div', { class: 'panel-section' },
-        h('div', { class: 'panel-title' }, 'Expressions',
-          h('button', { class: 'btn btn-small', onclick: () => this.addRow() }, svgIcon(icon('plus'), 'icon icon-sm'), 'Ajouter'),
-        ),
-        this.examples,
-      ),
-      this.list,
-      h('div', { class: 'panel-section' },
-        h('div', { class: 'panel-title' }, 'Affichage'),
-        h('div', { class: 'options-grid' },
-          option('grid', 'Quadrillage'),
-          option('axes', 'Axes gradués'),
-          option('ortho', 'Repère orthonormé'),
-          option('pi', 'Graduations en π'),
-          option('coords', 'Coordonnées des points'),
+      h('div', { class: 'panel-header' },
+        h('h2', null, 'Expressions'),
+        h('div', { class: 'panel-header-actions' },
+          h('div', { class: 'popover-anchor' }, examplesBtn),
+          h('div', { class: 'popover-anchor' }, helpBtn),
         ),
       ),
-      h('details', { class: 'panel-section help' },
-        h('summary', null, 'Aide-mémoire de saisie'),
-        h('table', null,
-          ...[
-            ['f(x) = x^2 - 1', 'fonction nommée'],
-            ['y = 2x + 1', 'fonction (ax, 2x, x(x+1) : produits implicites)'],
-            ["f'(x), f''(x)", 'dérivées d\'une fonction nommée'],
-            ['a = 2', 'curseur (animable ▶)'],
-            ['r = 1 + cos(θ)', 'courbe polaire (θ ou theta)'],
-            ['(cos(t), sin(t))', 'courbe paramétrée'],
-            ['A = (2, 3)', 'point'],
-            ['x = 3', 'droite verticale'],
-            ['x < 0 ? -x : x', 'fonction définie par morceaux'],
-            ['ln, log, e^x, sqrt, abs', 'ln népérien, log décimal'],
-          ].map(([code, desc]) => h('tr', null, h('td', null, h('code', null, code)), h('td', null, desc))),
-        ),
-        h('p', { class: 'muted' }, 'Molette ou pincement : zoom · glisser : déplacer · clic sur un point : afficher ses coordonnées.'),
+      h('div', { class: 'panel-scroll' },
+        this.list,
+        h('button', { class: 'expr-add', onclick: () => this.addRow() }, svgIcon(icon('plus'), 'icon icon-sm'), 'Nouvelle expression'),
       ),
     );
 
     // ── Scène ──
     this.canvas = h('canvas', { class: 'main-canvas', tabindex: '0', 'aria-label': 'Graphique (flèches : déplacer, + et − : zoomer)' });
     this.tooltip = h('div', { class: 'tooltip', hidden: true });
+    this.readout = h('div', { class: 'readout', hidden: true });
     this.orthoBtn = h('button', { class: 'btn btn-icon', title: 'Repère orthonormé', 'aria-label': 'Repère orthonormé', onclick: () => this.setOption('ortho', !this.state.opts.ortho) },
       h('span', { class: 'ortho-glyph', 'aria-hidden': 'true' }, '⊥'),
     );
+    const displayBtn = h('button', { class: 'btn btn-icon', title: 'Affichage (quadrillage, axes, graduations)', 'aria-label': 'Options d\'affichage' }, svgIcon(icon('grid')));
+    displayBtn.addEventListener('click', () => this.openDisplay(displayBtn));
     const zoom = (f: number) => () => {
       this.vp.zoomAt(this.vp.width / 2, this.vp.height / 2, f);
       this.viewChanged();
     };
-    this.stage = h('div', { class: 'stage' },
+    this.stage = h('div', { class: 'stage grapher-stage' },
       this.canvas,
-      h('div', { class: 'stage-toolbar top-left' },
-        h('button', { class: 'btn btn-icon', title: 'Afficher / masquer le panneau', 'aria-label': 'Afficher ou masquer le panneau', onclick: () => this.togglePanel() }, svgIcon(icon('panel'))),
+      h('div', { class: 'float-bar tl' },
+        h('button', { class: 'btn btn-icon', title: 'Afficher / masquer le panneau', 'aria-label': 'Afficher ou masquer le panneau', onclick: () => this.togglePanel() }, svgIcon(icon('sidebar'))),
       ),
-      h('div', { class: 'stage-toolbar top-right' },
+      h('div', { class: 'float-bar tr' },
         h('button', { class: 'btn btn-icon', title: 'Zoom avant', 'aria-label': 'Zoom avant', onclick: zoom(1.4) }, svgIcon(icon('zoomIn'))),
         h('button', { class: 'btn btn-icon', title: 'Zoom arrière', 'aria-label': 'Zoom arrière', onclick: zoom(1 / 1.4) }, svgIcon(icon('zoomOut'))),
-        h('button', { class: 'btn btn-icon', title: 'Vue par défaut', 'aria-label': 'Vue par défaut', onclick: () => this.resetView() }, svgIcon(icon('target'))),
+        h('button', { class: 'btn btn-icon', title: 'Vue par défaut (0)', 'aria-label': 'Vue par défaut', onclick: () => this.resetView() }, svgIcon(icon('target'))),
+        h('span', { class: 'sep' }),
         this.orthoBtn,
+        h('div', { class: 'popover-anchor' }, displayBtn),
       ),
+      this.readout,
       this.tooltip,
     );
 
@@ -165,10 +142,90 @@ class GrapherApp implements ModuleInstance, PanelHost {
     this.compile();
     this.syncRows();
     this.syncOptions();
+    void this.loadKatex();
 
     this.resizeObserver = new ResizeObserver(() => this.onResize());
     this.resizeObserver.observe(this.stage);
     if (isPresenting()) this.refresh();
+  }
+
+  /** KaTeX (écriture mathématique des lignes) est chargé en parallèle du module. */
+  private async loadKatex(): Promise<void> {
+    const [mod] = await Promise.all([import('katex'), import('katex/dist/katex.min.css')]);
+    this.katex = mod.default;
+    this.views.forEach((v) => v.renderDisplay());
+  }
+
+  renderTex(el: HTMLElement, tex: string): boolean {
+    if (!this.katex) return false;
+    try {
+      // \displaystyle : fractions en taille normale sur la ligne (les exposants restent petits).
+      this.katex.render(`\\displaystyle ${tex}`, el, { throwOnError: true, output: 'html' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private popover(anchor: HTMLElement, build: (close: () => void) => HTMLElement, align: 'left' | 'right' = 'right'): void {
+    const wasOpenHere = this.closePopover && anchor.parentElement?.querySelector('.menu');
+    this.closePopover?.();
+    if (wasOpenHere) return;
+    const close = () => this.closePopover?.();
+    const menu = build(close);
+    menu.classList.add('menu');
+    if (align === 'left') menu.classList.add('menu-left');
+    anchor.parentElement!.append(menu);
+    this.closePopover = dismissable(menu, () => {
+      menu.remove();
+      this.closePopover = null;
+    }, anchor);
+  }
+
+  private openExamples(anchor: HTMLElement): void {
+    this.popover(anchor, (close) => h('div', { role: 'menu', class: 'examples-menu' },
+      h('div', { class: 'menu-label' }, 'Exemples prêts à projeter'),
+      ...EXAMPLES.map((ex, i) => h('button', { class: 'menu-item', role: 'menuitem', onclick: () => { close(); this.loadExample(i); } },
+        svgIcon(icon('graph')), h('strong', null, ex.title), h('small', null, ex.level),
+      )),
+    ), 'right');
+  }
+
+  private openHelp(anchor: HTMLElement): void {
+    this.popover(anchor, () => h('div', { class: 'help-pop' },
+      h('div', { class: 'menu-label' }, 'Aide-mémoire de saisie'),
+      h('table', null,
+        ...[
+          ['f(x) = x^2 - 1', 'fonction nommée'],
+          ['y = 2x + 1', 'produits implicites : ax, 2x, x(x+1)'],
+          ["f'(x), f''(x)", 'dérivées d\'une fonction nommée'],
+          ['a = 2', 'curseur, animable'],
+          ['r = 1 + cos(θ)', 'courbe polaire (θ ou theta)'],
+          ['(cos(t), sin(t))', 'courbe paramétrée'],
+          ['A = (2, 3)', 'point'],
+          ['x = 3', 'droite verticale'],
+          ['x < 0 ? -x : x', 'fonction par morceaux'],
+          ['ln, log, e^x, sqrt, abs', 'ln népérien, log décimal'],
+        ].map(([code, desc]) => h('tr', null, h('td', null, h('code', null, code)), h('td', null, desc))),
+      ),
+      h('p', null, 'Molette ou pincement : zoom · glisser : déplacer · clic sur un point : coordonnées.'),
+    ), 'right');
+  }
+
+  private openDisplay(anchor: HTMLElement): void {
+    const row = (key: keyof GrapherState['opts'], label: string) => {
+      const input = h('input', { type: 'checkbox', class: 'switch', checked: this.state.opts[key] });
+      input.addEventListener('change', () => this.setOption(key, input.checked));
+      return h('label', { class: 'option-row' }, h('span', null, label), input);
+    };
+    this.popover(anchor, () => h('div', { class: 'display-pop' },
+      h('div', { class: 'menu-label' }, 'Affichage'),
+      row('grid', 'Quadrillage'),
+      row('axes', 'Axes gradués'),
+      row('ortho', 'Repère orthonormé'),
+      row('pi', 'Graduations en π'),
+      row('coords', 'Coordonnées des points'),
+    ));
   }
 
   // ─── Cycle de vie ─────────────────────────────────────────────────────────
@@ -246,12 +303,11 @@ class GrapherApp implements ModuleInstance, PanelHost {
       }
       const at = this.list.children[i] ?? null;
       if (at !== view.el) this.list.insertBefore(view.el, at);
-      view.update(row, this.program.rows[i]);
+      view.update(row, this.program.rows[i], i);
     });
   }
 
   private syncOptions(): void {
-    for (const [key, input] of this.optionInputs) input.checked = this.state.opts[key];
     this.orthoBtn.classList.toggle('is-active', this.state.opts.ortho);
   }
 
@@ -388,10 +444,8 @@ class GrapherApp implements ModuleInstance, PanelHost {
     this.viewChanged();
   }
 
-  private loadExample(): void {
-    const index = Number(this.examples.value);
+  private loadExample(index: number): void {
     const example = EXAMPLES[index];
-    this.examples.value = '';
     if (!example) return;
     if (this.dirty && !window.confirm('Remplacer les expressions actuelles par cet exemple ?')) return;
     this.animating.clear();
@@ -541,6 +595,7 @@ class GrapherApp implements ModuleInstance, PanelHost {
     c.addEventListener('pointercancel', (e) => this.onPointerUp(e));
     c.addEventListener('pointerleave', () => {
       if (!this.pointers.size) this.setHover(null, null);
+      this.readout.hidden = true;
     });
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
@@ -648,7 +703,7 @@ class GrapherApp implements ModuleInstance, PanelHost {
     if (drag.kind === 'tangent') row.tangent = x;
     else if (row.integral) row.integral = drag.kind === 'intA' ? [x, row.integral[1]] : [row.integral[0], x];
     this.dirty = true;
-    this.views.get(drag.id)?.update(row, this.compiledOf(drag.id));
+    this.views.get(drag.id)?.update(row, this.compiledOf(drag.id), this.state.rows.indexOf(row));
     this.invalidate();
     this.ctx.notifyStateChange();
   }
@@ -685,6 +740,11 @@ class GrapherApp implements ModuleInstance, PanelHost {
   }
 
   private updateHover(pos: Pos): void {
+    const step = niceStep(1 / this.vp.scaleX);
+    const digits = Math.max(0, -Math.floor(Math.log10(step)));
+    const round = (v: number) => fmt(Number(v.toFixed(Math.min(digits, 10))), 8);
+    this.readout.textContent = `x = ${round(this.vp.pxToX(pos.x))}   y = ${round(this.vp.pxToY(pos.y))}`;
+    this.readout.hidden = false;
     const handle = this.hitHandle(pos);
     this.canvas.style.cursor = handle ? 'ew-resize' : '';
     const point = this.nearestPoint(pos, 12);

@@ -8,42 +8,52 @@ import { toast } from './toast';
  * exactement la même configuration sur leur tablette ou leur téléphone.
  */
 export function openShareDialog(url: string, title: string): void {
-  const dialog = h('dialog', { class: 'dialog share-dialog', 'aria-label': 'Partager' });
+  const dialog = h('dialog', { class: 'dialog share-dialog', 'aria-labelledby': 'share-title' });
   const input = h('input', { class: 'input', type: 'text', readonly: true, value: url, 'aria-label': 'Lien de partage' });
+  const copyBtn = h('button', { class: 'btn btn-primary' }, svgIcon(icon('copy')), 'Copier');
 
-  const copy = async () => {
+  copyBtn.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(url);
+      copyBtn.replaceChildren(svgIcon(icon('check')), 'Copié');
       toast('Lien copié dans le presse-papiers.', 'success');
     } catch {
       input.select();
-      document.execCommand?.('copy');
-      toast('Lien sélectionné : Ctrl+C pour le copier.', 'info');
+      toast('Lien sélectionné : Ctrl+C pour le copier.');
     }
-  };
+  });
 
-  const qrBox = h('div', { class: 'qr' });
+  let qrBlock: HTMLElement;
   try {
     const qr = qrcode(0, 'L');
     qr.addData(url);
     qr.make();
-    qrBox.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    const holder = h('div', { class: 'qr-code' });
+    holder.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    qrBlock = h('div', { class: 'qr-frame' },
+      holder,
+      h('div', null,
+        h('h3', null, 'Projetez ce code'),
+        h('p', null, 'Les élèves le scannent et retrouvent exactement la même configuration sur leur tablette ou leur téléphone.'),
+      ),
+    );
   } catch {
-    qrBox.append(h('p', { class: 'muted' }, 'Configuration trop volumineuse pour un QR code : utilisez le lien.'));
+    qrBlock = h('p', { class: 'muted small' }, 'Configuration trop volumineuse pour un QR code : utilisez le lien.');
   }
 
   const close = () => dialog.close();
   dialog.append(
     h('div', { class: 'dialog-head' },
-      h('h2', null, `Partager — ${title}`),
-      h('button', { class: 'btn btn-icon', 'aria-label': 'Fermer', onclick: close }, svgIcon(icon('x'))),
+      h('div', null,
+        h('h2', { id: 'share-title' }, `Partager — ${title}`),
+        h('p', null, 'Le lien contient toute la configuration. Aucun compte, aucune donnée envoyée à un serveur.'),
+      ),
+      h('button', { class: 'btn btn-ghost btn-icon btn-sm', 'aria-label': 'Fermer', onclick: close }, svgIcon(icon('x'))),
     ),
-    h('p', { class: 'muted' }, 'Ce lien contient toute la configuration : aucun compte, aucun serveur. Projetez le QR code pour que la classe l\'ouvre.'),
-    h('div', { class: 'row' },
-      input,
-      h('button', { class: 'btn btn-primary', onclick: copy }, svgIcon(icon('link')), 'Copier'),
+    h('div', { class: 'dialog-body' },
+      h('div', { class: 'share-row' }, input, copyBtn),
+      qrBlock,
     ),
-    qrBox,
   );
   dialog.addEventListener('close', () => dialog.remove());
   dialog.addEventListener('click', (e) => {

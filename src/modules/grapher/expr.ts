@@ -50,6 +50,8 @@ export interface CompiledRow {
   dfn?: RealFn;
   tex?: string;
   derivTex?: string;
+  /** Écriture mathématique de la ligne entière (LaTeX), pour l'affichage. */
+  displayTex?: string;
   fx?: RealFn;
   fy?: RealFn;
   px?: () => number;
@@ -366,11 +368,60 @@ function fromMathjsDialect(node: AnyNode): AnyNode {
 
 /** LaTeX affichable, conventions françaises (ln, log décimal). */
 export function texOf(node: AnyNode): string {
-  return toMathjsDialect(node)
-    .toTex({ parenthesis: 'auto', implicit: 'hide' })
+  // Notation f'(x) pour les dérivées des fonctions nommées.
+  const handler = (n: AnyNode, options: object): string | undefined => {
+    if (n.type !== 'FunctionNode') return undefined;
+    const name = fnName(n);
+    if (!/__d[12]$/.test(name)) return undefined;
+    const primes = name.endsWith('2') ? "''" : "'";
+    return `${name.replace(/__d[12]$/, '')}${primes}\\left(${(n.args ?? []).map((a) => a.toTex(options)).join(',')}\\right)`;
+  };
+  return frenchTex(toMathjsDialect(node).toTex({ parenthesis: 'auto', implicit: 'hide', handler }));
+}
+
+/** Conventions françaises dans le LaTeX produit par mathjs. */
+function frenchTex(tex: string): string {
+  return tex
     .replace(/\\log_\{10\}/g, '\\log')
     .replace(/\\mathrm\{([a-zA-Z])\}/g, '$1')
-    .replace(/\\cdot(?=\s*[^\d\s])/g, '\\,');
+    .replace(/\\cdot(?=\s*[^\d\s])/g, '\\,')
+    .replace(/(\d)\.(\d)/g, '$1{,}$2')
+    .replace(/\\text\{if \}/g, '\\text{si }')
+    .replace(/\\text\{otherwise\}/g, '\\text{sinon}');
+}
+
+/** Nombre au format LaTeX français. */
+export function numTex(v: number): string {
+  if (!Number.isFinite(v)) return '\\text{?}';
+  const s = String(Math.round(v * 1e10) / 1e10);
+  return s.replace('.', '{,}');
+}
+
+function nameTex(name: string): string {
+  return frenchTex(asAny(new SymbolNode(name) as unknown as MathNode).toTex());
+}
+
+/** Écriture mathématique d'une ligne (affichage dans le panneau). */
+function displayTexOf(row: CompiledRow, p: Pending): string | undefined {
+  const v = row.variable === 'theta' ? '\\theta' : (row.variable ?? 'x');
+  const pair = () => `\\left(${texOf(p.xNode!)}\\,;\\,${texOf(p.yNode!)}\\right)`;
+  switch (row.kind) {
+    case 'function':
+      return `${row.name ? `${nameTex(row.name)}(${v})` : 'y'}=${texOf(p.body!)}`;
+    case 'polar':
+      return `r=${texOf(p.body!)}`;
+    case 'parametric':
+      return `${row.name ? `${nameTex(row.name)}:` : ''}${pair()}`;
+    case 'point':
+      return `${row.name ? nameTex(row.name) : ''}${pair()}`;
+    case 'vline':
+      return `x=${texOf(p.body!)}`;
+    case 'param':
+      return `${nameTex(row.name!)}=${numTex(row.value!)}`;
+    case 'constant':
+      return `${nameTex(row.name!)}=${texOf(p.body!)}`;
+  }
+  return undefined;
 }
 
 /** Remplace les appels aux fonctions utilisateur par leur définition (pour dériver). */
@@ -531,6 +582,14 @@ export class Program {
       }
     }
     this.updateConstants();
+    for (const p of pending) {
+      if (p.row.kind === 'error' || p.row.kind === 'empty') continue;
+      try {
+        p.row.displayTex = displayTexOf(p.row, p);
+      } catch {
+        p.row.displayTex = undefined;
+      }
+    }
     this.rows = pending.map((p) => p.row);
   }
 

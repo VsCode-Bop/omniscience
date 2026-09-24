@@ -39,6 +39,8 @@ export interface ModuleDefinition {
   category: ModuleCategory;
   status: ModuleStatus;
   summary: string;
+  /** Accroche courte (cartes de l'accueil). */
+  tagline: string;
   /** Nom d'icône (voir core/icons.ts). */
   icon: string;
   /** Fonctionnalités prévues / disponibles (affichées sur la fiche du module). */

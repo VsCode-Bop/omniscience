@@ -2,7 +2,7 @@
  * Module « Simulateur de circuits » : éditeur sur grille + simulation temps réel.
  */
 import './circuit.css';
-import { clear, h, svgIcon } from '../../core/dom';
+import { bindRange, clear, h, svgIcon, syncRange } from '../../core/dom';
 import { canvasToBlob } from '../../core/export/download';
 import { CanvasPainter, fitCanvas } from '../../core/graphics/canvas-painter';
 import { SvgPainter } from '../../core/graphics/svg-painter';
@@ -16,7 +16,7 @@ import type { CircuitState, CurrentDisplay, ElementData, ElementType, PropValue,
 import { CURRENT_THRESHOLD, currentVisible, drawCircuit, readCircuitPalette, shownCurrent, type CircuitPalette, type SceneInput } from './render/scene';
 import { distanceToElement, GRID } from './render/symbols';
 import { Simulator, type ElementState } from './solver/simulator';
-import { buildPalette, shortName, type Tool } from './ui/palette';
+import { buildPalette, shortName, symbolSVG, type Tool } from './ui/palette';
 import { Scope } from './ui/scope';
 
 export function mount(container: HTMLElement, ctx: ModuleContext): ModuleInstance {
@@ -24,18 +24,18 @@ export function mount(container: HTMLElement, ctx: ModuleContext): ModuleInstanc
 }
 
 const SPEEDS: [number, string][] = [
-  [1e-5, '10 µs / s'],
-  [1e-4, '100 µs / s'],
-  [1e-3, '1 ms / s'],
-  [1e-2, '10 ms / s'],
-  [0.1, '100 ms / s'],
-  [1, '1 s / s (temps réel)'],
+  [1e-5, '× 1/100 000'],
+  [1e-4, '× 1/10 000'],
+  [1e-3, '× 1/1 000'],
+  [1e-2, '× 1/100'],
+  [0.1, '× 1/10'],
+  [1, 'Temps réel'],
 ];
-const CURRENT_MODES: [CurrentDisplay, string][] = [
-  ['both', 'Courant : les deux'],
-  ['conventional', 'Sens conventionnel'],
-  ['electrons', 'Électrons'],
-  ['none', 'Courant masqué'],
+const CURRENT_MODES: [CurrentDisplay, string, string][] = [
+  ['conventional', 'Sens conventionnel', 'Flèches rouges : sens conventionnel du courant (de + vers −)'],
+  ['electrons', 'Électrons', 'Particules : déplacement réel des électrons (de − vers +)'],
+  ['both', 'Les deux', 'Sens conventionnel et électrons superposés'],
+  ['none', 'Masqué', 'Ne pas représenter le courant'],
 ];
 const STEPS_PER_FRAME = 100;
 const isPresenting = () => document.documentElement.classList.contains('is-presenting');
@@ -98,7 +98,11 @@ class CircuitApp implements ModuleInstance {
   private readonly side: HTMLElement;
   private readonly scope: Scope;
   private readonly playBtn: HTMLButtonElement;
-  private readonly currentSelect: HTMLSelectElement;
+  private readonly currentButtons = new Map<CurrentDisplay, HTMLButtonElement>();
+  private readonly speedSelect: HTMLSelectElement;
+  private readonly timeEl: HTMLElement;
+  private propEditBefore: string | null = null;
+  private bannerKey = '';
   private readonly palette: ReturnType<typeof buildPalette>;
   private readonly resizeObserver: ResizeObserver;
   private readonly onKey = (e: KeyboardEvent) => this.handleKey(e);
@@ -111,45 +115,63 @@ class CircuitApp implements ModuleInstance {
     this.sim = new Simulator(this.state.elements);
     this.sim.onStep = () => this.recordScope();
 
-    // ── Palette ──
+    // ── Bibliothèque de composants ──
     this.palette = buildPalette((tool) => this.setTool(tool));
 
     // ── Scène ──
     this.canvas = h('canvas', { class: 'main-canvas', tabindex: '0', 'aria-label': 'Schéma du circuit' });
     this.banner = h('div', { class: 'circuit-banner', hidden: true, role: 'status' });
     this.tooltip = h('div', { class: 'tooltip', hidden: true });
-    this.playBtn = h('button', { class: 'btn btn-icon', onclick: () => this.togglePlay() });
-    this.currentSelect = h('select', { class: 'select', 'aria-label': 'Affichage du courant' },
-      ...CURRENT_MODES.map(([v, label]) => h('option', { value: v }, label)),
+    this.playBtn = h('button', { class: 'btn btn-primary btn-icon play-btn', onclick: () => this.togglePlay() });
+    this.timeEl = h('span', { class: 'dock-time' });
+    this.speedSelect = h('select', { class: 'select dock-select', title: 'Vitesse de la simulation (temps simulé par seconde réelle)', 'aria-label': 'Vitesse de la simulation' },
+      ...SPEEDS.map(([v, label]) => h('option', { value: String(v) }, label)),
     );
-    this.currentSelect.addEventListener('change', () => {
-      this.state.opts.current = this.currentSelect.value as CurrentDisplay;
+    this.speedSelect.addEventListener('change', () => {
+      this.state.opts.speed = Number(this.speedSelect.value);
+      this.applySpeed();
       this.changed(false);
     });
+    const currentSeg = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'Représentation du courant' },
+      ...CURRENT_MODES.map(([mode, label, title]) => {
+        const b = h('button', { class: 'seg-btn', role: 'radio', title, onclick: () => {
+          this.state.opts.current = mode;
+          this.changed(false);
+        } },
+        mode === 'conventional' ? h('i', { class: 'legend-arrow' }) : mode === 'electrons' ? h('i', { class: 'legend-electron' }) : mode === 'both' ? h('i', { class: 'legend-both' }) : svgIcon(icon('eyeOff'), 'icon icon-sm legend-none'),
+        h('span', { class: 'seg-text' }, label));
+        this.currentButtons.set(mode, b);
+        return b;
+      }),
+    );
     this.scope = new Scope((i) => this.setScope(i, null));
     this.applySpeed();
     const view = h('div', { class: 'circuit-view' },
       this.canvas,
-      h('div', { class: 'stage-toolbar top-left' },
-        this.playBtn,
-        h('button', { class: 'btn btn-icon', title: 'Réinitialiser (t = 0, condensateurs déchargés)', 'aria-label': 'Réinitialiser la simulation', onclick: () => this.resetSim() }, svgIcon(icon('reset'))),
-        h('span', { class: 'sep' }),
-        this.currentSelect,
-      ),
-      h('div', { class: 'stage-toolbar top-right' },
+      h('div', { class: 'float-bar tl' },
         h('button', { class: 'btn btn-icon', title: 'Annuler (Ctrl+Z)', 'aria-label': 'Annuler', onclick: () => this.undo() }, svgIcon(icon('undo'))),
         h('button', { class: 'btn btn-icon', title: 'Rétablir (Ctrl+Y)', 'aria-label': 'Rétablir', onclick: () => this.redo() }, svgIcon(icon('redo'))),
-        h('span', { class: 'sep' }),
-        h('button', { class: 'btn btn-icon', title: 'Zoom avant', 'aria-label': 'Zoom avant', onclick: () => this.zoomBy(1.25) }, svgIcon(icon('zoomIn'))),
+      ),
+      h('div', { class: 'float-bar tr' },
         h('button', { class: 'btn btn-icon', title: 'Zoom arrière', 'aria-label': 'Zoom arrière', onclick: () => this.zoomBy(0.8) }, svgIcon(icon('zoomOut'))),
-        h('button', { class: 'btn btn-icon', title: 'Cadrer le circuit', 'aria-label': 'Cadrer le circuit', onclick: () => this.fit() }, svgIcon(icon('maximize'))),
+        h('button', { class: 'btn btn-icon', title: 'Zoom avant', 'aria-label': 'Zoom avant', onclick: () => this.zoomBy(1.25) }, svgIcon(icon('zoomIn'))),
+        h('button', { class: 'btn btn-icon', title: 'Cadrer le circuit', 'aria-label': 'Cadrer le circuit', onclick: () => this.fit() }, svgIcon(icon('fit'))),
+      ),
+      h('div', { class: 'float-bar bc dock' },
+        this.playBtn,
+        h('button', { class: 'btn btn-icon', title: 'Réinitialiser (t = 0, condensateurs déchargés, composants réparés)', 'aria-label': 'Réinitialiser la simulation', onclick: () => this.resetSim() }, svgIcon(icon('reset'))),
+        h('span', { class: 'sep' }),
+        h('div', { class: 'dock-clock' }, h('span', { class: 'dock-label' }, 't'), this.timeEl),
+        this.speedSelect,
+        h('span', { class: 'sep' }),
+        currentSeg,
       ),
       this.banner,
       this.tooltip,
     );
     this.stage = h('div', { class: 'stage circuit-stage' }, view, this.scope.el);
 
-    this.side = h('aside', { class: 'panel circuit-side', 'aria-label': 'Propriétés' });
+    this.side = h('aside', { class: 'panel inspector', 'aria-label': 'Propriétés' });
     this.root = h('div', { class: 'workspace circuit' }, this.palette.el, this.stage, this.side);
     container.appendChild(this.root);
 
@@ -196,7 +218,7 @@ class CircuitApp implements ModuleInstance {
   }
 
   async exportPNG(): Promise<Blob> {
-    const [x0, y0, w, hgt] = this.bounds(50, 130);
+    const [x0, y0, w, hgt] = this.bounds(40, 130, 40);
     const scale = 2;
     const c = document.createElement('canvas');
     c.width = Math.ceil(w * scale);
@@ -210,7 +232,7 @@ class CircuitApp implements ModuleInstance {
   }
 
   exportSVG(): string {
-    const [x0, y0, w, hgt] = this.bounds(50, 130);
+    const [x0, y0, w, hgt] = this.bounds(40, 130, 40);
     const p = new SvgPainter();
     drawCircuit(p, this.sceneInput(null, 1), this.pal);
     return p.toSVG(w, hgt, this.pal.bg, [x0, y0, w, hgt]);
@@ -240,6 +262,7 @@ class CircuitApp implements ModuleInstance {
     this.scope.render(this.sim.time, this.state.scope);
     if (t - this.lastPanelUpdate > 150) {
       this.lastPanelUpdate = t;
+      this.timeEl.textContent = fmtSI(this.sim.time, 's', 3);
       this.liveUpdaters.forEach((u) => u());
       this.updateBanner();
     }
@@ -305,7 +328,7 @@ class CircuitApp implements ModuleInstance {
   }
 
   /** Rectangle englobant le circuit (unités de dessin) : [x, y, largeur, hauteur]. */
-  private bounds(margin: number, labelRoom = 0): [number, number, number, number] {
+  private bounds(margin: number, labelRight = 0, labelTop = 0): [number, number, number, number] {
     const els = this.state.elements;
     if (!els.length) return [0, 0, 400, 300];
     let x0 = Infinity;
@@ -320,19 +343,36 @@ class CircuitApp implements ModuleInstance {
         y1 = Math.max(y1, y * GRID);
       }
     }
-    // Place supplémentaire à droite pour les étiquettes des composants verticaux.
-    return [x0 - margin, y0 - margin, x1 - x0 + 2 * margin + labelRoom, y1 - y0 + 2 * margin];
+    // Place supplémentaire pour les étiquettes : à droite des composants verticaux, au-dessus des horizontaux.
+    return [x0 - margin, y0 - margin - labelTop, x1 - x0 + 2 * margin + labelRight, y1 - y0 + 2 * margin + labelTop];
+  }
+
+  /** Marges occupées par les barres flottantes (haut) et la barre de simulation (bas), en pixels. */
+  private overlayInsets(): { top: number; bottom: number } {
+    const view = this.canvas.parentElement!.getBoundingClientRect();
+    let top = 0;
+    let bottom = 0;
+    for (const el of this.canvas.parentElement!.querySelectorAll<HTMLElement>('.float-bar, .circuit-banner')) {
+      if (el.hidden || !el.offsetParent) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top - view.top < view.height / 2) top = Math.max(top, r.bottom - view.top);
+      else bottom = Math.max(bottom, view.bottom - r.top);
+    }
+    return { top: top + 8, bottom: bottom + 8 };
   }
 
   private fit(): void {
     const W = this.canvas.clientWidth;
     const H = this.canvas.clientHeight;
     if (W < 10 || H < 10) return;
-    const [x0, y0, w, hgt] = this.bounds(80, 130);
-    const zoom = Math.max(0.4, Math.min(isPresenting() ? 2.2 : 1.7, W / w, H / hgt));
+    this.updateBanner();
+    const { top, bottom } = this.overlayInsets();
+    const avail = Math.max(H * 0.4, H - top - bottom);
+    const [x0, y0, w, hgt] = this.bounds(40, 130, 40);
+    const zoom = Math.max(0.4, Math.min(isPresenting() ? 2.2 : 1.7, W / w, avail / hgt));
     this.cam.zoom = zoom;
     this.cam.x = x0 + w / 2 - W / zoom / 2;
-    this.cam.y = y0 + hgt / 2 - H / zoom / 2;
+    this.cam.y = y0 + hgt / 2 - (top + avail / 2) / zoom;
   }
 
   private onResize(): void {
@@ -547,28 +587,41 @@ class CircuitApp implements ModuleInstance {
     this.playBtn.append(svgIcon(icon(this.running ? 'pause' : 'play')));
     this.playBtn.title = this.running ? 'Pause (Espace)' : 'Lecture (Espace)';
     this.playBtn.setAttribute('aria-label', this.playBtn.title);
-    this.currentSelect.value = this.state.opts.current;
+    for (const [mode, b] of this.currentButtons) {
+      b.classList.toggle('is-active', mode === this.state.opts.current);
+      b.setAttribute('aria-checked', String(mode === this.state.opts.current));
+    }
+    const speed = this.state.opts.speed;
+    this.speedSelect.value = String(SPEEDS.reduce((best, [v]) => (Math.abs(Math.log(v / speed)) < Math.abs(Math.log(best / speed)) ? v : best), SPEEDS[0][0]));
+    this.timeEl.textContent = fmtSI(this.sim.time, 's', 3);
   }
 
   private updateBanner(): void {
     const issues = this.sim.issues.filter((i) => i.kind !== 'convergence' || this.sim.issues.length === 1);
     const main = issues[0];
-    this.banner.className = 'circuit-banner';
+    let kind = '';
+    let message = '';
     if (main) {
-      this.banner.classList.add(main.kind === 'burnt' || main.kind === 'convergence' ? 'is-warning' : 'is-danger');
-      this.banner.textContent = `⚠ ${main.message}`;
-      this.banner.hidden = false;
+      kind = main.kind === 'burnt' || main.kind === 'convergence' ? 'is-warning' : 'is-danger';
+      message = main.message;
     } else if (this.slowed) {
-      this.banner.classList.add('is-info');
-      this.banner.textContent = 'Simulation ralentie : réduisez la vitesse pour une animation fluide.';
-      this.banner.hidden = false;
+      kind = 'is-info';
+      message = 'Simulation ralentie : réduisez la vitesse pour une animation fluide.';
     } else if (this.hint) {
-      this.banner.classList.add('is-info');
-      this.banner.replaceChildren(h('span', null, this.hint),
-        h('button', { class: 'banner-close', 'aria-label': 'Masquer', onclick: () => { this.hint = ''; this.updateBanner(); } }, '×'));
-      this.banner.hidden = false;
-    } else {
-      this.banner.hidden = true;
+      kind = 'hint';
+      message = this.hint;
+    }
+    // On ne reconstruit le bandeau que si son contenu change (sinon le bouton de fermeture
+    // serait recréé toutes les 150 ms et les clics pourraient se perdre).
+    const key = `${kind}|${message}`;
+    if (key === this.bannerKey) return;
+    this.bannerKey = key;
+    this.banner.hidden = !kind;
+    if (!kind) return;
+    this.banner.className = `circuit-banner ${kind === 'hint' ? 'is-info' : kind}`;
+    this.banner.replaceChildren(svgIcon(icon(kind === 'is-danger' || kind === 'is-warning' ? 'alert' : 'info')), h('span', null, message));
+    if (kind === 'hint') {
+      this.banner.append(h('button', { class: 'btn btn-ghost btn-icon btn-sm banner-close', 'aria-label': 'Masquer', onclick: () => { this.hint = ''; this.updateBanner(); } }, svgIcon(icon('x'))));
     }
   }
 
@@ -582,8 +635,8 @@ class CircuitApp implements ModuleInstance {
     else this.renderCircuitPanel();
   }
 
-  private live(fn: () => string): HTMLElement {
-    const span = h('span', { class: 'live' });
+  private live(fn: () => string, cls = 'live'): HTMLElement {
+    const span = h('span', { class: cls });
     const update = () => (span.textContent = fn());
     update();
     this.liveUpdaters.push(update);
@@ -592,60 +645,51 @@ class CircuitApp implements ModuleInstance {
 
   private renderCircuitPanel(): void {
     const opts = this.state.opts;
-    const check = (label: string, key: 'values' | 'measures' | 'potentials') => {
-      const input = h('input', { type: 'checkbox', checked: opts[key] });
+    const toggle = (label: string, key: 'values' | 'measures' | 'potentials') => {
+      const input = h('input', { type: 'checkbox', class: 'switch', checked: opts[key] });
       input.addEventListener('change', () => {
         opts[key] = input.checked;
         this.changed(false);
       });
-      return h('label', { class: 'check' }, input, label);
+      return h('label', { class: 'option-row' }, h('span', null, label), input);
     };
-    const speed = h('select', { class: 'select', 'aria-label': 'Vitesse de simulation' },
-      ...SPEEDS.map(([v, label]) => h('option', { value: String(v) }, label)),
-    );
-    speed.value = String(SPEEDS.reduce((best, [v]) => (Math.abs(Math.log(v / opts.speed)) < Math.abs(Math.log(best / opts.speed)) ? v : best), SPEEDS[0][0]));
-    speed.addEventListener('change', () => {
-      opts.speed = Number(speed.value);
-      this.applySpeed();
-      this.changed(false);
-    });
-    const examples = h('select', { class: 'select', 'aria-label': 'Charger un exemple' },
-      h('option', { value: '' }, 'Exemples…'),
-      ...EXAMPLES.map((ex, i) => h('option', { value: String(i) }, `${ex.title} — ${ex.level}`)),
-    );
-    examples.addEventListener('change', () => this.loadExample(Number(examples.value)));
+    const count = this.state.elements.filter((e) => e.type !== 'wire').length;
 
     this.side.append(
-      h('section', { class: 'panel-section' },
-        h('div', { class: 'panel-title' }, 'Simulation'),
-        h('div', { class: 'kv' }, h('span', null, 'Temps simulé'), this.live(() => fmtSI(this.sim.time, 's'))),
-        h('label', { class: 'field' }, h('span', null, 'Vitesse (temps simulé par seconde)'), speed),
+      h('div', { class: 'panel-header' },
+        h('h2', null, 'Circuit'),
+        h('span', { class: 'muted small' }, `${count} composant${count > 1 ? 's' : ''}`),
       ),
-      h('section', { class: 'panel-section' },
-        h('div', { class: 'panel-title' }, 'Affichage'),
-        h('div', { class: 'legend-current' },
-          h('span', null, h('i', { class: 'legend-arrow' }), 'Sens conventionnel (+ → −)'),
-          h('span', null, h('i', { class: 'legend-electron' }), 'Électrons (− → +)'),
+      h('div', { class: 'panel-scroll' },
+        h('section', { class: 'panel-section' },
+          h('div', { class: 'section-title' }, 'Affichage'),
+          toggle('Noms et valeurs', 'values'),
+          toggle('Tension et intensité de chaque dipôle', 'measures'),
+          toggle('Couleur selon le potentiel', 'potentials'),
         ),
-        check('Noms et valeurs des composants', 'values'),
-        check('Tension et intensité de chaque dipôle', 'measures'),
-        check('Couleur selon le potentiel', 'potentials'),
-      ),
-      h('section', { class: 'panel-section' },
-        h('div', { class: 'panel-title' }, 'Circuits'),
-        examples,
-        h('button', { class: 'btn btn-danger btn-block', onclick: () => this.clearAll() }, svgIcon(icon('trash')), 'Tout effacer'),
-      ),
-      h('details', { class: 'panel-section help', open: this.state.elements.length < 3 },
-        h('summary', null, 'Mode d\'emploi'),
-        h('ul', null,
-          h('li', null, 'Choisissez un composant dans la palette puis ', h('b', null, 'glissez'), ' sur la grille entre ses deux bornes.'),
-          h('li', null, 'Un fil qui arrive au milieu d\'un autre fil s\'y raccorde automatiquement.'),
-          h('li', null, 'Glissez un nœud pour le déplacer avec tous ses fils ; cliquez sur un interrupteur pour le basculer.'),
-          h('li', null, 'Survolez un nœud : potentiel et loi des nœuds. Survolez un dipôle : U et I.'),
-          h('li', null, 'Clavier : lettre de la palette = outil, ', h('kbd', null, 'Maj+R'), ' pivoter, ', h('kbd', null, 'Maj+F'), ' inverser, ', h('kbd', null, 'Suppr'), ' effacer, ', h('kbd', null, 'Espace'), ' pause, ', h('kbd', null, 'Ctrl+Z'), ' annuler.'),
+        h('section', { class: 'panel-section' },
+          h('div', { class: 'section-title' }, 'Exemples'),
+          h('div', { class: 'example-list' },
+            ...EXAMPLES.map((ex, i) => h('button', { class: 'example-card', onclick: () => this.loadExample(i) },
+              h('span', { class: 'example-top' }, h('strong', null, ex.title), h('span', { class: 'example-level' }, ex.level)),
+              h('span', { class: 'example-hint' }, ex.hint),
+            )),
+          ),
         ),
-        h('p', { class: 'muted' }, 'La vitesse d\'animation des électrons est proportionnelle au logarithme de l\'intensité ; dans un vrai fil, les électrons avancent de quelques millimètres par seconde seulement.'),
+        h('details', { class: 'panel-section help', open: this.state.elements.length < 3 },
+          h('summary', null, 'Mode d\'emploi'),
+          h('ul', null,
+            h('li', null, 'Choisissez un composant puis ', h('b', null, 'glissez'), ' sur la grille, d\'une borne à l\'autre.'),
+            h('li', null, 'Un fil qui arrive au milieu d\'un autre fil s\'y raccorde.'),
+            h('li', null, 'Glissez un nœud pour le déplacer avec ses fils ; cliquez sur un interrupteur pour le basculer.'),
+            h('li', null, 'Survolez un nœud : potentiel et loi des nœuds. Survolez un dipôle : U et I.'),
+            h('li', null, h('kbd', null, 'Maj+R'), ' pivoter · ', h('kbd', null, 'Maj+F'), ' inverser · ', h('kbd', null, 'Suppr'), ' effacer · ', h('kbd', null, 'Espace'), ' pause · ', h('kbd', null, 'Ctrl+Z'), ' annuler'),
+          ),
+          h('p', { class: 'muted small' }, 'La vitesse des électrons à l\'écran croît avec l\'intensité (échelle logarithmique) ; dans un vrai fil, ils n\'avancent que de quelques millimètres par seconde.'),
+        ),
+        h('section', { class: 'panel-section' },
+          h('button', { class: 'btn btn-ghost btn-danger btn-block', onclick: () => this.clearAll() }, svgIcon(icon('trash')), 'Effacer tout le circuit'),
+        ),
       ),
     );
   }
@@ -654,60 +698,82 @@ class CircuitApp implements ModuleInstance {
     const spec = CATALOG[el.type];
     const st = () => this.sim.states.get(el.id);
     const name = this.labels.get(el.id);
+    const symbol = h('span', { class: 'insp-symbol' });
+    symbol.innerHTML = symbolSVG(el.type);
+    const source = el.type === 'battery' || el.type === 'acsource' || el.type === 'isource';
 
-    const header = h('section', { class: 'panel-section' },
-      h('div', { class: 'panel-title' }, name ? `${name} · ${shortName(el.type)}` : shortName(el.type),
-        h('button', { class: 'btn btn-small btn-ghost', onclick: () => this.select(null) }, 'Circuit ›'),
+    const header = h('div', { class: 'panel-header insp-head' },
+      symbol,
+      h('div', { class: 'insp-title' },
+        h('h2', null, name ?? shortName(el.type)),
+        h('span', null, spec.name),
       ),
-      h('h3', null, spec.name),
-      h('p', { class: 'muted small' }, spec.description),
+      h('div', { class: 'insp-actions' },
+        h('button', { class: 'btn btn-ghost btn-icon btn-sm', title: 'Pivoter (Maj+R)', 'aria-label': 'Pivoter', disabled: el.type === 'ground', onclick: () => this.rotateSelected() }, svgIcon(icon('rotate'))),
+        h('button', { class: 'btn btn-ghost btn-icon btn-sm', title: 'Inverser le sens (Maj+F)', 'aria-label': 'Inverser', disabled: el.type === 'ground', onclick: () => this.flipSelected() }, svgIcon(icon('flip'))),
+        h('button', { class: 'btn btn-ghost btn-icon btn-sm btn-danger', title: 'Supprimer (Suppr)', 'aria-label': 'Supprimer', onclick: () => this.deleteSelected() }, svgIcon(icon('trash'))),
+        h('button', { class: 'btn btn-ghost btn-icon btn-sm', title: 'Fermer', 'aria-label': 'Fermer l\'inspecteur', onclick: () => this.select(null) }, svgIcon(icon('x'))),
+      ),
+    );
+
+    const lcdRow = (q: string, fn: () => string) => h('div', { class: 'lcd-row' }, h('span', { class: 'lcd-q' }, q), this.live(fn, 'lcd-v'));
+    const measures = h('section', { class: 'panel-section' },
+      h('div', { class: 'section-title' }, 'Mesures', h('span', { class: 'section-note' }, source ? 'convention générateur' : 'convention récepteur')),
+      h('div', { class: 'lcd' },
+        lcdRow('U', () => {
+          const s = st();
+          return !s || Number.isNaN(s.v) ? '— — —' : fmtSI(displayVoltage(el, s), 'V', 4, true);
+        }),
+        lcdRow('I', () => (st() ? fmtSI(shownCurrent(st()!.i), 'A', 4, true) : '— — —')),
+        lcdRow('P', () => {
+          const s = st();
+          if (!s || el.type === 'voltmeter' || el.type === 'ammeter' || el.type === 'wire') return '— — —';
+          return fmtSI(Math.abs(displayVoltage(el, s) * shownCurrent(s.i)), 'W', 4, true);
+        }),
+      ),
+      h('p', { class: 'insp-state' }, this.live(() => this.stateText(el, st()))),
     );
 
     const fields = spec.props.map((p) => this.propField(el, p));
+    const settings = fields.length ? h('section', { class: 'panel-section' }, h('div', { class: 'section-title' }, 'Réglages'), ...fields) : null;
 
-    const meters = h('section', { class: 'panel-section multimeter' },
-      h('div', { class: 'panel-title' }, 'Multimètre'),
-      h('div', { class: 'meter-grid' },
-        h('span', null, 'U'), this.live(() => {
-          const s = st();
-          return !s || Number.isNaN(s.v) ? '—' : fmtSI(displayVoltage(el, s), 'V', 4);
+    const burntCard = st()?.burnt
+      ? h('div', { class: 'alert-card' },
+        svgIcon(icon('alert')),
+        h('div', null, h('strong', null, 'Composant grillé'), h('p', null, 'L\'intensité ou la tension ont dépassé ses limites : le circuit est ouvert à cet endroit.')),
+        h('button', { class: 'btn btn-sm', onclick: () => { this.sim.repair(el.id); this.sim.step(); this.renderSide(); } }, 'Remplacer'),
+      )
+      : null;
+
+    const channel = (i: number) => h('div', { class: 'scope-assign' },
+      h('span', { class: `scope-ch ch${i + 1}` }, `Voie ${i + 1}`),
+      h('div', { class: 'seg' },
+        ...(['v', 'i'] as const).map((q) => {
+          const active = this.state.scope[i]?.id === el.id && this.state.scope[i]?.q === q;
+          return h('button', {
+            class: `seg-btn${active ? ' is-active' : ''}`,
+            title: active ? 'Retirer de l\'oscilloscope' : `Afficher ${q === 'v' ? 'la tension' : 'l\'intensité'} sur la voie ${i + 1}`,
+            onclick: () => this.setScope(i, active ? null : { id: el.id, q }),
+          }, q === 'v' ? 'Tension U' : 'Intensité I');
         }),
-        h('span', null, 'I'), this.live(() => (st() ? fmtSI(shownCurrent(st()!.i), 'A', 4) : '—')),
-        h('span', null, 'P'), this.live(() => {
-          const s = st();
-          if (!s || el.type === 'voltmeter' || el.type === 'ammeter' || el.type === 'wire') return '—';
-          const p = displayVoltage(el, s) * s.i;
-          return `${fmtSI(Math.abs(p), 'W', 3)}${el.type === 'battery' || el.type === 'acsource' || el.type === 'isource' ? (p > 0 ? ' fournie' : p < 0 ? ' reçue' : '') : ''}`;
-        }),
-      ),
-      h('p', { class: 'muted small' }, this.live(() => this.stateText(el, st()))),
-    );
-
-    const actions = h('section', { class: 'panel-section' },
-      h('div', { class: 'panel-title' }, 'Actions'),
-      h('div', { class: 'btn-row' },
-        h('button', { class: 'btn', onclick: () => this.rotateSelected(), disabled: el.type === 'ground' }, svgIcon(icon('rotate')), 'Pivoter'),
-        h('button', { class: 'btn', onclick: () => this.flipSelected(), disabled: el.type === 'ground' }, svgIcon(icon('flip')), 'Inverser'),
-        h('button', { class: 'btn btn-danger', onclick: () => this.deleteSelected() }, svgIcon(icon('trash')), 'Supprimer'),
-      ),
-      st()?.burnt
-        ? h('button', { class: 'btn btn-primary btn-block', onclick: () => { this.sim.repair(el.id); this.sim.step(); this.renderSide(); } }, 'Remplacer le composant grillé')
-        : null,
-    );
-
-    const scopeButtons = el.type === 'ground' ? null : h('section', { class: 'panel-section' },
-      h('div', { class: 'panel-title' }, 'Oscilloscope'),
-      h('div', { class: 'btn-row' },
-        ...[0, 1].flatMap((i) => (['v', 'i'] as const).map((q) =>
-          h('button', {
-            class: `btn btn-small${this.state.scope[i]?.id === el.id && this.state.scope[i]?.q === q ? ' is-active' : ''}`,
-            onclick: () => this.setScope(i, { id: el.id, q }),
-          }, `${q === 'v' ? 'U' : 'I'} → voie ${i + 1}`),
-        )),
       ),
     );
+    const scopeSection = el.type === 'ground' ? null : h('section', { class: 'panel-section' },
+      h('div', { class: 'section-title' }, 'Oscilloscope'),
+      channel(0),
+      channel(1),
+    );
 
-    this.side.append(header, ...(fields.length ? [h('section', { class: 'panel-section fields' }, ...fields)] : []), meters, actions, ...(scopeButtons ? [scopeButtons] : []));
+    this.side.append(
+      header,
+      h('div', { class: 'panel-scroll' },
+        h('p', { class: 'insp-desc' }, spec.description),
+        ...(burntCard ? [burntCard] : []),
+        ...(settings ? [settings] : []),
+        measures,
+        ...(scopeSection ? [scopeSection] : []),
+      ),
+    );
     // Le composant grille ou est remplacé : on reconstruit le panneau (bouton « Remplacer »).
     const burnt = !!st()?.burnt;
     this.liveUpdaters.push(() => {
@@ -742,17 +808,20 @@ class CircuitApp implements ModuleInstance {
 
   private propField(el: ElementData, p: PropSpec): HTMLElement {
     if (p.kind === 'boolean') {
-      const input = h('input', { type: 'checkbox', checked: el.props[p.key] === true });
+      const input = h('input', { type: 'checkbox', class: 'switch', checked: el.props[p.key] === true });
       input.addEventListener('change', () => this.setProp(el, p.key, input.checked));
-      return h('label', { class: 'check' }, input, p.label);
+      return h('label', { class: 'option-row prop' }, h('span', null, p.label), input);
     }
     if (p.kind === 'select') {
       const select = h('select', { class: 'select' }, ...(p.options ?? []).map((o) => h('option', { value: o.value }, o.label)));
       select.value = String(el.props[p.key]);
       select.addEventListener('change', () => this.setProp(el, p.key, select.value));
-      return h('label', { class: 'field' }, h('span', null, p.label), select);
+      return h('label', { class: 'prop' }, h('span', { class: 'prop-label' }, p.label), select);
     }
-    const input = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: fmtSI(Number(el.props[p.key]), p.unit ?? '', 6) });
+
+    const unit = p.unit ?? '';
+    const format = (v: number) => fmtSI(v, '', 6).trim();
+    const input = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: format(Number(el.props[p.key])), 'aria-label': p.label, spellcheck: 'false' });
     const commit = () => {
       const v = parseSI(input.value);
       const ok = Number.isFinite(v) && v >= (p.min ?? -Infinity) && v <= (p.max ?? Infinity);
@@ -760,16 +829,51 @@ class CircuitApp implements ModuleInstance {
       if (ok) this.setProp(el, p.key, v);
     };
     input.addEventListener('change', commit);
-    input.addEventListener('keydown', (e) => e.key === 'Enter' && commit());
-    return h('div', { class: 'field' },
-      h('span', null, p.label),
-      input,
-      p.presets
-        ? h('div', { class: 'presets' }, ...p.presets.map((v) =>
-          h('button', { class: `chip${Number(el.props[p.key]) === v ? ' is-active' : ''}`, onclick: () => this.setProp(el, p.key, v) }, fmtSI(v, p.unit ?? '')),
-        ))
-        : null,
+    input.addEventListener('keydown', (e) => e.key === 'Enter' && input.blur());
+
+    // Curseur (logarithmique sur plusieurs décades) : réglage en direct, une seule entrée d'historique.
+    let range: HTMLInputElement | null = null;
+    const sl = p.slider;
+    if (sl) {
+      const toT = (v: number) => (sl.log ? (1000 * Math.log(Math.max(v, sl.min) / sl.min)) / Math.log(sl.max / sl.min) : ((v - sl.min) / (sl.max - sl.min)) * 1000);
+      const fromT = (t: number) => (sl.log ? Number((sl.min * (sl.max / sl.min) ** (t / 1000)).toPrecision(2)) : Number((sl.min + ((sl.max - sl.min) * t) / 1000).toPrecision(3)));
+      range = bindRange(h('input', { type: 'range', min: 0, max: 1000, step: 1, value: Math.round(Math.min(1000, Math.max(0, toT(Number(el.props[p.key]))))), 'aria-label': p.label }));
+      range.addEventListener('input', () => {
+        const v = fromT(Number(range!.value));
+        input.value = format(v);
+        this.setPropLive(el, p.key, v);
+      });
+      range.addEventListener('change', () => this.commitPropEdit());
+    }
+    const presets = p.presets
+      ? h('div', { class: 'presets' }, ...p.presets.map((v) =>
+        h('button', { class: `chip${Number(el.props[p.key]) === v ? ' is-active' : ''}`, onclick: () => this.setProp(el, p.key, v) }, fmtSI(v, unit)),
+      ))
+      : null;
+    if (range) syncRange(range);
+
+    return h('div', { class: 'prop' },
+      h('div', { class: 'prop-head' },
+        h('span', { class: 'prop-label' }, p.label),
+        h('div', { class: 'unit-input' }, input, h('span', { class: 'unit' }, unit)),
+      ),
+      range,
+      presets,
     );
+  }
+
+  /** Réglage continu (curseur) : applique sans empiler l'historique à chaque pas. */
+  private setPropLive(el: ElementData, key: string, value: PropValue): void {
+    if (this.propEditBefore === null) this.propEditBefore = this.snapshot();
+    el.props[key] = value;
+    this.sim.setElements(this.state.elements);
+    if (!this.running || !this.sim.hasDynamics) this.sim.step();
+    this.ctx.notifyStateChange();
+  }
+
+  private commitPropEdit(): void {
+    if (this.propEditBefore !== null) this.pushHistory(this.propEditBefore);
+    this.propEditBefore = null;
   }
 
   private loadExample(index: number): void {

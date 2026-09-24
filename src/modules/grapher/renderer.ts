@@ -5,7 +5,7 @@
 import { cssVar } from '../../core/dom';
 import { fmt, fmtPoint } from '../../core/math/format';
 import { integrate } from '../../core/math/numeric';
-import { disc, line, type Painter, type StrokeStyle } from '../../core/graphics/painter';
+import { disc, line, MATH_FONT, type Painter, type StrokeStyle } from '../../core/graphics/painter';
 import type { PointKind } from './analysis';
 import type { CompiledRow } from './expr';
 import { sampleCartesian, sampleParametric, type Polyline } from './sampling';
@@ -142,7 +142,7 @@ function drawGrid(p: Painter, s: Scene, pal: Palette): void {
     p.lineTo(vp.width - arrow, oy + arrow / 2);
     p.closePath();
     p.fill(pal.axis);
-    p.text('x', vp.width - 6 * k, oy - 10 * k, { color: pal.text, size: font + 2, italic: true, align: 'right', baseline: 'bottom', halo: pal.bg });
+    p.text('x', vp.width - 8 * k, oy - 9 * k, { color: pal.text, size: font + 5, italic: true, family: MATH_FONT, align: 'right', baseline: 'bottom', halo: pal.bg });
   }
   if (ox >= 0 && ox <= vp.width) {
     p.beginPath();
@@ -151,7 +151,7 @@ function drawGrid(p: Painter, s: Scene, pal: Palette): void {
     p.lineTo(ox + arrow / 2, arrow);
     p.closePath();
     p.fill(pal.axis);
-    p.text('y', ox + 10 * k, 6 * k, { color: pal.text, size: font + 2, italic: true, align: 'left', baseline: 'top', halo: pal.bg });
+    p.text('y', ox + 10 * k, 4 * k, { color: pal.text, size: font + 5, italic: true, family: MATH_FONT, align: 'left', baseline: 'top', halo: pal.bg });
   }
 
   const labelStyle = { color: pal.text, size: font, halo: pal.bg };
@@ -177,7 +177,7 @@ function drawGrid(p: Painter, s: Scene, pal: Palette): void {
   }
   p.stroke({ color: pal.axis, width: 1.2 * k, cap: 'butt' });
   if (ox >= 0 && ox <= vp.width && oy >= 0 && oy <= vp.height) {
-    p.text('O', ox - 6 * k, oy + 6 * k, { ...labelStyle, align: 'right', baseline: 'top', italic: true });
+    p.text('O', ox - 6 * k, oy + 5 * k, { ...labelStyle, size: font + 3, family: MATH_FONT, align: 'right', baseline: 'top', italic: true });
   }
 }
 
@@ -245,10 +245,10 @@ export function drawScene(p: Painter, s: Scene, pal: Palette): void {
         strokeLines(p, sampleCartesian(f, vp), { color, width: curveWidth });
         if (st.deriv && c.dfn) {
           strokeLines(p, sampleCartesian(c.dfn, vp), { color, width: 1.8 * k, dash: [7 * k, 5 * k], alpha: 0.85 });
-          const name = c.name ? `${c.name}'` : "y'";
+          const name = c.name ? `${c.name}′` : 'y′';
           labels.push(() => labelCurve(p, c.dfn!, vp, name, color, pal, k, 0.8));
         }
-        if (c.name) labels.push(() => labelCurve(p, f, vp, `𝒞${c.name}`, color, pal, k, 0.88));
+        if (c.name) labels.push(() => labelCurve(p, f, vp, c.name!, color, pal, k, 0.88, true));
         if (st.tangent !== undefined && c.dfn) {
           const x0 = st.tangent;
           const y0 = f(x0);
@@ -260,7 +260,7 @@ export function drawScene(p: Painter, s: Scene, pal: Palette): void {
               const px = vp.xToPx(x0);
               const py = vp.yToPx(y0);
               drawHandle(p, px, py, color, pal.bg, k);
-              p.text(tangentEquation(m, b), px + 12 * k, py - 12 * k, { color, size: 13 * k, weight: 'bold', halo: pal.bg, baseline: 'bottom' });
+              p.text(tangentEquation(m, b), px + 12 * k, py - 12 * k, { color, size: 15 * k, weight: 600, family: MATH_FONT, halo: pal.bg, baseline: 'bottom' });
             });
           }
         }
@@ -345,7 +345,7 @@ export function drawScene(p: Painter, s: Scene, pal: Palette): void {
   }
 }
 
-function labelCurve(p: Painter, f: (x: number) => number, vp: Viewport, name: string, color: string, pal: Palette, k: number, at: number): void {
+function labelCurve(p: Painter, f: (x: number) => number, vp: Viewport, name: string, color: string, pal: Palette, k: number, at: number, curveName = false): void {
   // Cherche, de droite à gauche à partir de `at`, une abscisse où la courbe est visible.
   for (let t = at; t > 0.3; t -= 0.05) {
     const x = vp.pxToX(vp.width * t);
@@ -355,9 +355,16 @@ function labelCurve(p: Painter, f: (x: number) => number, vp: Viewport, name: st
     // Évite les barres d'outils flottantes (haut de la scène).
     if (py > 72 * k && py < vp.height - 24 * k) {
       const slopeUp = f(x + 1 / vp.scaleX) > y;
-      p.text(name, vp.xToPx(x), py + (slopeUp ? 16 : -12) * k, {
-        color, size: 15 * k, weight: 'bold', italic: true, align: 'center', baseline: 'middle', halo: pal.bg,
-      });
+      const px = vp.xToPx(x);
+      const ly = py + (slopeUp ? 18 : -14) * k;
+      const style = { color, italic: true, family: MATH_FONT, baseline: 'middle' as const, halo: pal.bg };
+      if (curveName) {
+        // Notation 𝒞f : « C » suivi du nom de la fonction en indice.
+        p.text('C', px - 4 * k, ly, { ...style, size: 19 * k, align: 'right' });
+        p.text(name, px - 3 * k, ly + 6 * k, { ...style, size: 13 * k, align: 'left' });
+      } else {
+        p.text(name, px, ly, { ...style, size: 17 * k, align: 'center' });
+      }
       return;
     }
   }

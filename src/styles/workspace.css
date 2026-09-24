@@ -1,10 +1,10 @@
 /*
- * Mise en page commune aux modules « espace de travail » :
- * panneau latéral + scène de dessin (+ panneau secondaire éventuel).
+ * Mise en page commune aux outils : panneau latéral + scène de dessin, barres d'outils
+ * flottantes, info-bulles, lecture de coordonnées.
  */
 .workspace {
   display: grid;
-  grid-template-columns: var(--panel-w, 340px) minmax(0, 1fr);
+  grid-template-columns: var(--panel-w, 360px) minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
@@ -12,42 +12,68 @@
 .workspace.panel-collapsed > .panel { visibility: hidden; border: 0; }
 
 .panel {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  overflow-y: auto; overflow-x: hidden;
-  min-height: 0;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  background: var(--surface); border-right: 1px solid var(--line);
 }
-.panel-section { padding: .8rem .9rem; border-bottom: 1px solid var(--border); }
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none;
+  height: 52px; padding: 0 10px 0 16px; border-bottom: 1px solid var(--line);
+}
+.panel-header h2 { font-size: 14px; font-weight: 600; }
+.panel-header-actions { display: flex; align-items: center; gap: 4px; }
+.panel-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.panel-section { padding: 16px; border-bottom: 1px solid var(--line); }
 .panel-section:last-child { border-bottom: 0; }
-.panel-title {
-  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
-  font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
-  margin: 0 0 .6rem;
+.section-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
 }
+.field { display: grid; gap: 6px; }
+.field + .field { margin-top: 12px; }
+.field-label { font-size: 12.5px; font-weight: 500; color: var(--text-2); }
 
 .stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--canvas-bg); }
 .stage canvas.main-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.stage canvas.main-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-.stage-toolbar {
-  position: absolute; z-index: 5; display: flex; gap: .3rem; flex-wrap: wrap;
-  padding: .3rem; border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  border: 1px solid var(--border); box-shadow: var(--shadow);
-  backdrop-filter: blur(6px);
+/* Barres d'outils flottantes */
+.float-bar {
+  position: absolute; z-index: 5; display: flex; align-items: center; gap: 2px; padding: 4px;
+  border-radius: 12px; border: 1px solid var(--line-2);
+  background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-md);
 }
-.stage-toolbar.top-left { top: .6rem; left: .6rem; }
-.stage-toolbar.top-right { top: .6rem; right: .6rem; }
-.stage-toolbar.bottom-right { bottom: .6rem; right: .6rem; }
-.stage-toolbar .sep { width: 1px; background: var(--border); margin: 2px 1px; }
+.float-bar .btn:not(.btn-primary) { border-color: transparent; background: transparent; box-shadow: none; }
+.float-bar .btn:not(.btn-primary):hover:not(:disabled) { background: var(--surface-3); }
+.float-bar .btn.is-active { background: var(--accent-soft); color: var(--accent); }
+.float-bar .sep { width: 1px; align-self: stretch; margin: 5px 3px; background: var(--line-2); }
+.float-bar.tl { top: 12px; left: 12px; }
+.float-bar.tr { top: 12px; right: 12px; }
+.float-bar.bl { bottom: 12px; left: 12px; }
+.float-bar.br { bottom: 12px; right: 12px; }
+.float-bar.bc { bottom: 14px; left: 50%; transform: translateX(-50%); }
+.ortho-glyph { font-family: var(--font-serif); font-size: 18px; line-height: 1; }
 
 .tooltip {
-  position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none;
-  background: var(--surface); color: var(--text); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
-  padding: .4rem .6rem; font-size: .82rem; line-height: 1.4; max-width: 300px;
+  position: absolute; left: 0; top: 0; z-index: 7; pointer-events: none;
+  max-width: 320px; padding: 8px 11px; border-radius: 10px;
+  background: var(--ink); color: var(--ink-contrast); box-shadow: var(--shadow-lg);
+  font-size: 12.5px; line-height: 1.5;
 }
 .tooltip b { font-weight: 600; }
+.tooltip .t-muted { opacity: .65; }
+.tooltip .t-mono { font-family: var(--font-mono); font-size: 12px; }
+
+.readout {
+  position: absolute; left: 12px; bottom: 12px; z-index: 4; pointer-events: none;
+  padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(6px);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-2); white-space: pre; font-variant-numeric: tabular-nums;
+}
+
+/* Popovers d'outils */
+.display-pop { min-width: 250px; padding: 6px 12px 10px; }
+.display-pop .menu-label { padding: 6px 0 6px; }
 
 @media (max-width: 760px) {
   .workspace, .workspace.panel-collapsed {
@@ -55,6 +81,7 @@
     grid-template-rows: minmax(0, 1fr) auto;
   }
   .workspace > .stage { order: 1; }
-  .workspace > .panel { order: 2; border-right: 0; border-top: 1px solid var(--border); max-height: 42dvh; }
+  .workspace > .panel { order: 2; border-right: 0; border-top: 1px solid var(--line); max-height: 44dvh; }
   .workspace.panel-collapsed > .panel { display: none; }
+  .readout { display: none; }
 }

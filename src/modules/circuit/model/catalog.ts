@@ -13,6 +13,8 @@ export interface PropSpec {
   options?: { value: string; label: string }[];
   /** Valeurs usuelles proposées en un clic. */
   presets?: number[];
+  /** Curseur de réglage (logarithmique pour les grandeurs sur plusieurs décades). */
+  slider?: { min: number; max: number; log?: boolean };
 }
 
 export type Group = 'base' | 'generators' | 'receptors' | 'semi' | 'measure';
@@ -67,8 +69,8 @@ export const CATALOG: Record<ElementType, ComponentSpec> = {
   battery: {
     type: 'battery', name: 'Pile / générateur continu', prefix: 'G', group: 'generators', shortcut: 'g', terminals: 2,
     props: [
-      { key: 'E', label: 'Tension (f.é.m.)', kind: 'number', unit: 'V', default: 4.5, min: -1000, max: 1000, presets: [1.5, 4.5, 6, 9, 12] },
-      { key: 'r', label: 'Résistance interne', kind: 'number', unit: 'Ω', default: 0, min: 0, max: 1e6, presets: [0, 0.5, 1.5] },
+      { key: 'E', label: 'Tension (f.é.m.)', kind: 'number', unit: 'V', default: 4.5, min: -1000, max: 1000, presets: [1.5, 4.5, 6, 9, 12], slider: { min: 0, max: 24 } },
+      { key: 'r', label: 'Résistance interne', kind: 'number', unit: 'Ω', default: 0, min: 0, max: 1e6, presets: [0, 0.5, 1.5], slider: { min: 0, max: 10 } },
     ],
     description: 'Maintient une tension E entre ses bornes (grand trait = borne +). Avec r > 0 : U = E − r·I.',
     valueLabel: (p) => fmtSI(num(p, 'E'), 'V'),
@@ -76,9 +78,9 @@ export const CATALOG: Record<ElementType, ComponentSpec> = {
   acsource: {
     type: 'acsource', name: 'Générateur basse fréquence (GBF)', prefix: 'GBF', group: 'generators', terminals: 2,
     props: [
-      { key: 'amp', label: 'Amplitude', kind: 'number', unit: 'V', default: 5, min: 0, max: 1000, presets: [1, 5, 10] },
-      { key: 'f', label: 'Fréquence', kind: 'number', unit: 'Hz', default: 50, min: 0.001, max: 1e6, presets: [1, 50, 100, 1000] },
-      { key: 'offset', label: 'Composante continue', kind: 'number', unit: 'V', default: 0, min: -1000, max: 1000 },
+      { key: 'amp', label: 'Amplitude', kind: 'number', unit: 'V', default: 5, min: 0, max: 1000, presets: [1, 5, 10], slider: { min: 0, max: 20 } },
+      { key: 'f', label: 'Fréquence', kind: 'number', unit: 'Hz', default: 50, min: 0.001, max: 1e6, presets: [1, 50, 100, 1000], slider: { min: 0.1, max: 10000, log: true } },
+      { key: 'offset', label: 'Composante continue', kind: 'number', unit: 'V', default: 0, min: -1000, max: 1000, slider: { min: -10, max: 10 } },
       {
         key: 'wave', label: 'Forme du signal', kind: 'select', default: 'sine',
         options: [{ value: 'sine', label: 'Sinusoïdal' }, { value: 'square', label: 'Carré' }, { value: 'triangle', label: 'Triangle' }],
@@ -89,42 +91,42 @@ export const CATALOG: Record<ElementType, ComponentSpec> = {
   },
   isource: {
     type: 'isource', name: 'Source de courant', prefix: 'S', group: 'generators', terminals: 2,
-    props: [{ key: 'I', label: 'Intensité', kind: 'number', unit: 'A', default: 0.01, min: -100, max: 100, presets: [0.001, 0.01, 0.1, 1] }],
+    props: [{ key: 'I', label: 'Intensité', kind: 'number', unit: 'A', default: 0.01, min: -100, max: 100, presets: [0.001, 0.01, 0.1, 1], slider: { min: 1e-4, max: 2, log: true } }],
     description: 'Impose l\'intensité du courant dans sa branche (sens de la flèche).',
     valueLabel: (p) => fmtSI(num(p, 'I'), 'A'),
   },
   resistor: {
     type: 'resistor', name: 'Résistance (conducteur ohmique)', prefix: 'R', group: 'receptors', shortcut: 'r', terminals: 2,
-    props: [{ key: 'R', label: 'Résistance', kind: 'number', unit: 'Ω', default: 100, min: 1e-3, max: 1e9, presets: [10, 100, 220, 470, 1000, 10000] }],
+    props: [{ key: 'R', label: 'Résistance', kind: 'number', unit: 'Ω', default: 100, min: 1e-3, max: 1e9, presets: [10, 100, 220, 470, 1000, 10000], slider: { min: 1, max: 1e6, log: true } }],
     description: 'Loi d\'Ohm : U = R × I. Convertit l\'énergie électrique en chaleur (effet Joule).',
     valueLabel: (p) => fmtSI(num(p, 'R'), 'Ω'),
   },
   lamp: {
     type: 'lamp', name: 'Lampe', prefix: 'L', group: 'receptors', shortcut: 'l', terminals: 2,
     props: [
-      { key: 'U', label: 'Tension nominale', kind: 'number', unit: 'V', default: 3.5, min: 0.1, max: 1000, presets: [2.5, 3.5, 6, 12] },
-      { key: 'P', label: 'Puissance nominale', kind: 'number', unit: 'W', default: 0.7, min: 1e-3, max: 1e4, presets: [0.3, 0.7, 1, 5] },
+      { key: 'U', label: 'Tension nominale', kind: 'number', unit: 'V', default: 3.5, min: 0.1, max: 1000, presets: [2.5, 3.5, 6, 12], slider: { min: 1, max: 24 } },
+      { key: 'P', label: 'Puissance nominale', kind: 'number', unit: 'W', default: 0.7, min: 1e-3, max: 1e4, presets: [0.3, 0.7, 1, 5], slider: { min: 0.05, max: 50, log: true } },
     ],
     description: 'Brille normalement sous sa tension nominale, faiblement en sous-tension, et grille en forte surtension.',
     valueLabel: (p) => `${fmt(num(p, 'U'), 3)} V – ${fmt(num(p, 'P'), 3)} W`,
   },
   motor: {
     type: 'motor', name: 'Moteur', prefix: 'M', group: 'receptors', shortcut: 'm', terminals: 2,
-    props: [{ key: 'R', label: 'Résistance interne', kind: 'number', unit: 'Ω', default: 10, min: 0.01, max: 1e6 }],
+    props: [{ key: 'R', label: 'Résistance interne', kind: 'number', unit: 'Ω', default: 10, min: 0.01, max: 1e6, slider: { min: 0.1, max: 1000, log: true } }],
     description: 'Tourne d\'autant plus vite que l\'intensité est grande ; le sens de rotation s\'inverse avec le sens du courant.',
   },
   capacitor: {
     type: 'capacitor', name: 'Condensateur', prefix: 'C', group: 'receptors', shortcut: 'c', terminals: 2,
     props: [
-      { key: 'C', label: 'Capacité', kind: 'number', unit: 'F', default: 1e-3, min: 1e-15, max: 100, presets: [1e-6, 10e-6, 100e-6, 1e-3] },
-      { key: 'v0', label: 'Tension initiale', kind: 'number', unit: 'V', default: 0, min: -1e4, max: 1e4 },
+      { key: 'C', label: 'Capacité', kind: 'number', unit: 'F', default: 1e-3, min: 1e-15, max: 100, presets: [1e-6, 10e-6, 100e-6, 1e-3], slider: { min: 1e-9, max: 1, log: true } },
+      { key: 'v0', label: 'Tension initiale', kind: 'number', unit: 'V', default: 0, min: -1e4, max: 1e4, slider: { min: -12, max: 12 } },
     ],
     description: 'Stocke des charges : i = C·du/dt. Sa tension ne peut pas varier brusquement (constante de temps τ = RC).',
     valueLabel: (p) => fmtSI(num(p, 'C'), 'F'),
   },
   inductor: {
     type: 'inductor', name: 'Bobine (inductance)', prefix: 'B', group: 'receptors', shortcut: 'b', terminals: 2,
-    props: [{ key: 'L', label: 'Inductance', kind: 'number', unit: 'H', default: 0.1, min: 1e-9, max: 1e4, presets: [0.01, 0.1, 1] }],
+    props: [{ key: 'L', label: 'Inductance', kind: 'number', unit: 'H', default: 0.1, min: 1e-9, max: 1e4, presets: [0.01, 0.1, 1], slider: { min: 1e-4, max: 10, log: true } }],
     description: 'u = L·di/dt : elle s\'oppose aux variations du courant (constante de temps τ = L/R).',
     valueLabel: (p) => fmtSI(num(p, 'L'), 'H'),
   },
@@ -140,7 +142,7 @@ export const CATALOG: Record<ElementType, ComponentSpec> = {
         key: 'color', label: 'Couleur', kind: 'select', default: 'red',
         options: Object.entries(LED_COLORS).map(([value, c]) => ({ value, label: `${c.label} (seuil ≈ ${String(c.vf).replace('.', ',')} V)` })),
       },
-      { key: 'Imax', label: 'Intensité maximale', kind: 'number', unit: 'A', default: 0.03, min: 1e-4, max: 10 },
+      { key: 'Imax', label: 'Intensité maximale', kind: 'number', unit: 'A', default: 0.03, min: 1e-4, max: 10, slider: { min: 0.005, max: 0.2, log: true } },
     ],
     description: 'S\'allume dans le sens passant. Une résistance de protection est indispensable : au-delà de Imax, elle grille !',
   },

@@ -14,6 +14,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'prototype',
     icon: 'graph',
     summary: 'Courbes cartésiennes, polaires et paramétriques, curseurs, dérivées, tangentes, intégrales et points remarquables.',
+    tagline: `Tracez, animez les paramètres, étudiez : dérivée, tangente, intégrale, limites.`,
     features: [
       'Rendu Canvas 2D haute densité avec échantillonnage adaptatif et détection des asymptotes',
       'Fonctions nommées f(x)=…, dérivées f\'(x), polaires r=…, paramétriques (x(t) ; y(t)), points',
@@ -32,6 +33,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'calculator',
     summary: 'Calculatrice de type NumWorks avec calcul formel, éditeur d\'équations visuel et historique.',
+    tagline: `Calcul exact et formel, saisie naturelle des expressions, historique.`,
     features: [
       'Calcul exact (fractions, radicaux) et approché',
       'Calcul formel : développer, factoriser, résoudre, dériver, intégrer',
@@ -47,6 +49,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'sequence',
     summary: 'Suites explicites uₙ = f(n) et récurrentes uₙ₊₁ = f(uₙ) : termes, sommes, représentation en toile d\'araignée.',
+    tagline: `Termes, sommes et toile d'araignée pour conjecturer la convergence.`,
     features: [
       'Tableau des termes et sommes partielles',
       'Nuage de points (n ; uₙ) et diagramme en toile d\'araignée (cobweb)',
@@ -62,6 +65,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'dice',
     summary: 'Simulations de dés et de pièces, fluctuation d\'échantillonnage, lois normale, binomiale et de Poisson.',
+    tagline: `Simulations de hasard et lois de probabilité en un coup d'œil.`,
     features: [
       'Lancers simulés (1 à 10⁶) avec fréquences en temps réel',
       'Lois binomiale, de Poisson, normale : diagrammes, P(X ≤ k), intervalles',
@@ -76,6 +80,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'matrix',
     summary: 'Décomposition en facteurs premiers, PGCD/PPCM détaillés, calcul matriciel exact.',
+    tagline: `Facteurs premiers, algorithme d'Euclide et matrices en valeurs exactes.`,
     features: [
       'Décomposition en facteurs premiers et arbre de divisions',
       'Algorithme d\'Euclide pas à pas, PGCD, PPCM, Bézout',
@@ -92,6 +97,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'prototype',
     icon: 'circuit',
     summary: 'Construisez et simulez des circuits : courant conventionnel et électrons animés, lois d\'Ohm et de Kirchhoff en direct.',
+    tagline: `Construisez un circuit et voyez le courant circuler, électron par électron.`,
     features: [
       'Moteur MNA (analyse nodale modifiée) + Newton-Raphson + intégration trapézoïdale',
       'Piles, générateurs AC, sources de courant, résistances, lampes, moteurs, condensateurs, bobines, diodes, DEL, interrupteurs',
@@ -110,6 +116,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'optics',
     summary: 'Tracé de rayons à travers lentilles minces et miroirs, construction d\'images, réfraction de Snell-Descartes.',
+    tagline: `Rayons lumineux, lentilles et construction des images.`,
     features: [
       'Lentilles convergentes/divergentes, miroirs plans et sphériques',
       'Construction graphique de l\'image, relation de conjugaison, grandissement',
@@ -124,6 +131,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'projectile',
     summary: 'Lancer de projectiles, vecteurs vitesse et accélération, chronophotographie et énergies.',
+    tagline: `Trajectoires, vecteurs vitesse et énergies d'un projectile.`,
     features: [
       'Trajectoire parabolique avec ou sans frottements',
       'Vecteurs vitesse/accélération animés, chronophotographie',
@@ -140,6 +148,7 @@ export const MODULES: ModuleDefinition[] = [
     status: 'planned',
     icon: 'worksheet',
     summary: 'Fiches d\'exercices à paramètres aléatoires avec corrigés, export LaTeX et Markdown.',
+    tagline: `Exercices à valeurs aléatoires et corrigés, en LaTeX ou Markdown.`,
     features: [
       'Modèles d\'exercices paramétrés (valeurs tirées aléatoirement, versions A/B)',
       'Corrigés générés automatiquement',
@@ -151,9 +160,9 @@ export const MODULES: ModuleDefinition[] = [
 ];
 
 export const CATEGORIES: Record<ModuleCategory, { title: string; blurb: string }> = {
-  maths: { title: 'Mathématiques', blurb: 'Tracer, calculer, conjecturer.' },
-  physique: { title: 'Physique-chimie', blurb: 'Simuler, mesurer, visualiser l\'invisible.' },
-  enseignant: { title: 'Espace enseignant', blurb: 'Préparer et projeter ses séances.' },
+  maths: { title: 'Mathématiques', blurb: 'Tracer, calculer, conjecturer — puis démontrer.' },
+  physique: { title: 'Physique-chimie', blurb: 'Simuler, mesurer et rendre visible ce qui ne l\'est pas.' },
+  enseignant: { title: 'Espace enseignant', blurb: 'Préparer ses séances et produire ses supports.' },
 };
 
 export function findModule(id: string): ModuleDefinition | undefined {
