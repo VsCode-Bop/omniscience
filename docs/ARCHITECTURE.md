@@ -75,6 +75,11 @@ Chaque composant relie deux points de la grille (`x1, y1` → `x2, y2`) ; les co
 - **Matrices** (`matrix.ts`) : coefficients rationnels exacts (`Fraction`, numérateur et dénominateur BigInt réduits) ; Gauss-Jordan enregistre chaque opération sur les lignes (« L₂ ← L₂ − 3L₁ », les éliminations d'un même pivot regroupées) ; le pivot privilégie un coefficient ±1 pour limiter les fractions.
 - **Rendu** (`typeset.ts`) : fractions empilées, puissances et matrices entre parenthèses dessinées via Painter avec des largeurs estimées sur une police à chasse fixe ; le compte rendu des calculs défile dans un canevas dont la hauteur suit le contenu, et s'exporte en entier.
 
+## Mécanique (`src/modules/mechanics`)
+
+- **Intégration** (`physics.ts`) : Runge-Kutta d'ordre 4 sur (x, y, vₓ, v_y), pas choisi d'après la durée de vol sans frottements (~2 400 pas), impact au sol interpolé. Les états intermédiaires sont interpolés par Hermite cubique (positions) : exact pour un mouvement uniformément accéléré, d'où une énergie mécanique conservée à 10⁻⁶ près. Tests : portée, durée, flèche et vitesse d'impact comparées aux formules, solution analytique du frottement linéaire.
+- **Scène** (`render.ts`) : repère orthonormé cadré sur la trajectoire (et les comparaisons), vecteurs à échelle fixe pendant l'animation, Δv⃗ = v⃗ᵢ₊₁ − v⃗ᵢ₋₁ construit au point Mᵢ ; le graphique temporel partage l'horloge de la scène et sert aussi de curseur.
+
 ## Export PDF
 
 `core/export/pdf.ts` convertit le SVG de la scène avec svg2pdf.js. Le PDF est toujours produit avec la palette claire (impression) : la coquille bascule le thème de façon synchrone, appelle `readTheme()` du module, génère le SVG et rétablit le thème avant tout rafraîchissement de l'écran. Les polices standard des PDF ne couvrent que le jeu WinAnsi : des sous-ensembles de DejaVu et Liberation (`src/assets/pdf-fonts`, ≈ 270 ko, chargés au premier export PDF) sont enregistrés sous les noms des polices de l'interface pour que les symboles (−, Ω, ℓ, ≈, indices) s'impriment correctement.

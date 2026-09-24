@@ -1,0 +1,36 @@
+.workspace.mech { --panel-w: 360px; }
+
+.mech-stage { display: flex; flex-direction: column; }
+.mech-scene { position: relative; flex: 1 1 auto; min-height: 0; }
+.mech-chart { position: relative; flex: 0 0 34%; min-height: 200px; border-top: 1px solid var(--line); background: var(--canvas-bg); }
+.mech-chart-bar { top: 8px; right: 10px; padding: 3px; }
+.mech-chart-bar .seg { background: transparent; border: 0; }
+
+.mech-dock { gap: 4px; }
+.mech-clock { min-width: 92px; padding: 0 6px; font-family: var(--font-mono); font-size: 13px; color: var(--text); text-align: center; font-variant-numeric: tabular-nums; }
+.mech-time { width: 220px; margin: 0 6px; }
+
+.drag-field { margin-top: 14px; }
+.panel-section > .seg + .num-field { margin-top: 14px; }
+.tau-row { display: flex; justify-content: flex-end; margin: -2px 0 6px; }
+.tau-row .select { width: auto; }
+.target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 6px; }
+.target-field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.target-field i { font-family: var(--font-serif); font-size: 14px; }
+
+.mech-target { margin-bottom: 10px; padding: 9px 11px; border-radius: 9px; font-size: 13px; font-weight: 600; }
+.mech-target.is-hit { background: var(--success-soft); color: var(--success); }
+.mech-target.is-miss { background: var(--warning-soft); color: var(--text-2); font-weight: 500; }
+.mech-eq { display: grid; gap: 6px; }
+.mech-eq .eq-line { overflow-x: auto; font-size: 15px; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); scrollbar-width: thin; }
+.mech-eq p { font-size: 12.5px; line-height: 1.55; }
+
+@media (max-width: 1100px) {
+  .mech-time { width: 140px; }
+}
+@media (max-width: 760px) {
+  .mech-chart { flex-basis: 40%; min-height: 170px; }
+  .float-bar.mech-dock { left: 50%; max-width: calc(100% - 16px); overflow-x: auto; scrollbar-width: none; }
+  .mech-dock > * { flex: none; }
+  .mech-time { width: 110px; }
+}
